@@ -420,8 +420,34 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		NSManagedObjectContext *moc = [self managedObjectContext];
 		XMPPJID *myJid = [self myJIDForXMPPStream:xmppStream];
-		
 		XMPPJID *messageJid = isOutgoing ? [message to] : [message from];
+		
+		NSString *from;
+		NSString *to;
+		if ([message isErrorMessage]) {
+			from = [[message to] bare];
+			to = [[message from] bare];
+		} else {
+			if ([message isGroupChatMessage]) {
+				if ([[message from] resource]) {
+					from = [[message from] resource];
+					to = [[message from] bare];
+				} else {
+					from = [[xmppStream myJID] bare];
+					to = [[message to] bare];
+				}
+			} else {
+				if ([message from]) {
+					from = [[message from] bare];
+					to = [[message to] bare];
+				} else {
+					from = [[xmppStream myJID] bare];
+					to = [[message to] bare];
+				}
+			}
+		}
+		
+		NSLog(@"%@ %@ %d %d", from, to, isOutgoing, [message isErrorMessage]);
 		
 		// Fetch-n-Update OR Insert new message
 		
