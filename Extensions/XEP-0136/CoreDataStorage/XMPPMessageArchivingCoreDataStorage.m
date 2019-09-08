@@ -3,6 +3,7 @@
 #import "XMPPLogging.h"
 #import "NSXMLElement+XEP_0203.h"
 #import "XMPPMessage+XEP_0085.h"
+#import "XMPPMessage+XEP0045.h"
 
 #if ! __has_feature(objc_arc)
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
@@ -152,10 +153,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Private API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (XMPPMessageArchiving_Message_CoreDataObject *)composingMessageWithJid:(XMPPJID *)messageJid
-                                                               streamJid:(XMPPJID *)streamJid
-                                                                outgoing:(BOOL)isOutgoing
-                                                    managedObjectContext:(NSManagedObjectContext *)moc
+- (XMPPMessageArchiving_Message_CoreDataObject *)archivedMessageFrom:(NSString *)from
+														conversation:(NSString *)conversation
+																body:(NSString *)body
+																date:(NSDate *)date
+												managedObjectContext:(NSManagedObjectContext *)moc
 {
 	XMPPMessageArchiving_Message_CoreDataObject *result = nil;
 	
@@ -167,10 +169,9 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	// 3. outgoing - splits database in half
 	// 4. streamBareJidStr - might not limit database at all
 	
-	NSString *predicateFrmt = @"composing == YES AND bareJidStr == %@ AND outgoing == %@ AND streamBareJidStr == %@";
-	NSPredicate *predicate = [NSPredicate predicateWithFormat:predicateFrmt,
-                                                            [messageJid bare], @(isOutgoing),
-                                                            [streamJid bare]];
+	NSDate *minTimestamp = [date dateByAddingTimeInterval:-60];
+	NSDate *maxTimestamp = [date dateByAddingTimeInterval: 60];
+	NSPredicate *predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@ AND streamBareJidStr == %@ AND body == %@ AND timestamp BETWEEN {%@, %@}", conversation, from, body, minTimestamp, maxTimestamp];
 	
 	NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
 	
@@ -224,22 +225,22 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	// Potential override hook
 	
 	return [self contactWithBareJidStr:msg.bareJidStr
-	                  streamBareJidStr:msg.streamBareJidStr
-	              managedObjectContext:msg.managedObjectContext];
+					  streamBareJidStr:msg.streamBareJidStr
+				  managedObjectContext:msg.managedObjectContext];
 }
 
 - (XMPPMessageArchiving_Contact_CoreDataObject *)contactWithJid:(XMPPJID *)contactJid
-                                                      streamJid:(XMPPJID *)streamJid
-                                           managedObjectContext:(NSManagedObjectContext *)moc
+													  streamJid:(XMPPJID *)streamJid
+										   managedObjectContext:(NSManagedObjectContext *)moc
 {
 	return [self contactWithBareJidStr:[contactJid bare]
-	                  streamBareJidStr:[streamJid bare]
-	              managedObjectContext:moc];
+					  streamBareJidStr:[streamJid bare]
+				  managedObjectContext:moc];
 }
 
-- (XMPPMessageArchiving_Contact_CoreDataObject *)contactWithBareJidStr:(NSString *)contactBareJidStr
-                                                      streamBareJidStr:(NSString *)streamBareJidStr
-                                                  managedObjectContext:(NSManagedObjectContext *)moc
+- (NSArray<XMPPMessageArchiving_Contact_CoreDataObject *> *)contactsWithBareJidStr:(NSString *)contactBareJidStr
+																  streamBareJidStr:(NSString *)streamBareJidStr
+															  managedObjectContext:(NSManagedObjectContext *)moc
 {
 	NSEntityDescription *entity = [self contactEntity:moc];
 	
@@ -247,7 +248,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	if (streamBareJidStr)
 	{
 		predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@ AND streamBareJidStr == %@",
-	                                                              contactBareJidStr, streamBareJidStr];
+					 contactBareJidStr, streamBareJidStr];
 	}
 	else
 	{
@@ -256,7 +257,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	
 	NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
 	[fetchRequest setEntity:entity];
-	[fetchRequest setFetchLimit:1];
 	[fetchRequest setPredicate:predicate];
 	
 	NSError *error = nil;
@@ -269,7 +269,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	else
 	{
-		return (XMPPMessageArchiving_Contact_CoreDataObject *)[results lastObject];
+		return results;
 	}
 }
 
@@ -388,7 +388,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 {
 	// Message should either have a body, or be a composing notification
 	
-	NSString *messageBody = [[message elementForName:@"body"] stringValue];
+	if ([message isErrorMessage]) {
+		return;
+	}
+	
+	NSString *body = [[message elementForName:@"body"] stringValue];
 	BOOL isComposing = NO;
 	BOOL shouldDeleteComposingMessage = NO;
 	
@@ -417,45 +421,31 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		
 		NSManagedObjectContext *moc = [self managedObjectContext];
-		XMPPJID *myJid = [self myJIDForXMPPStream:xmppStream];
-		XMPPJID *messageJid = isOutgoing ? [message to] : [message from];
-		
+		NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
 		NSString *from;
 		NSString *to;
-		if ([message isErrorMessage]) {
-			from = [[message to] bare];
-			to = [[message from] bare];
-		} else {
-			if ([message isGroupChatMessage]) {
-				if ([[message from] resource]) {
-					from = [[message from] resource];
-					to = [[message from] bare];
-				} else {
-					from = [[xmppStream myJID] bare];
-					to = [[message to] bare];
-				}
+		if ([message isGroupChatMessage]) {
+			if ([[message from] resource]) {
+				from = [[message from] resource];
+				to = [[message from] bare];
 			} else {
-				if ([message from]) {
-					from = [[message from] bare];
-					to = [[message to] bare];
-				} else {
-					from = [[xmppStream myJID] bare];
-					to = [[message to] bare];
-				}
+				from = [[xmppStream myJID] bare];
+				to = [[message to] bare];
+			}
+		} else {
+			if ([message from]) {
+				from = (isOutgoing ? [[xmppStream myJID] bare] : [[message from] bare]);
+				to = (isOutgoing ? [[message to] bare] : [[message from] bare]);
+			} else {
+				from = [[xmppStream myJID] bare];
+				to = [[message to] bare];
 			}
 		}
 		
-		NSLog(@"%@ %@ %d %d", from, to, isOutgoing, [message isErrorMessage]);
-		
 		// Fetch-n-Update OR Insert new message
 		
-		XMPPMessageArchiving_Message_CoreDataObject *archivedMessage =
-		    [self composingMessageWithJid:messageJid
-		                        streamJid:myJid
-		                         outgoing:isOutgoing
-		             managedObjectContext:moc];
+		XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageFrom:from conversation:to body:body date:date managedObjectContext:moc];
 		
 		if (shouldDeleteComposingMessage)
 		{
@@ -477,30 +467,23 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			if (archivedMessage == nil)
 			{
 				archivedMessage = (XMPPMessageArchiving_Message_CoreDataObject *)
-					[[NSManagedObject alloc] initWithEntity:[self messageEntity:moc]
-				             insertIntoManagedObjectContext:nil];
+				[[NSManagedObject alloc] initWithEntity:[self messageEntity:moc]
+						 insertIntoManagedObjectContext:nil];
 				
 				didCreateNewArchivedMessage = YES;
 			}
 			
 			archivedMessage.message = message;
-			archivedMessage.body = messageBody;
-			
-			archivedMessage.bareJid = [messageJid bareJID];
-			archivedMessage.streamBareJidStr = [myJid bare];
-			
-			NSDate *timestamp = [message delayedDeliveryDate];
-			if (timestamp)
-				archivedMessage.timestamp = timestamp;
-			else
-				archivedMessage.timestamp = [[NSDate alloc] init];
-			
+			archivedMessage.body = body;
+			archivedMessage.bareJid = [XMPPJID jidWithString:to];
+			archivedMessage.streamBareJidStr = from;
+			archivedMessage.timestamp = date;
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
 			archivedMessage.isComposing = isComposing;
 			
 			XMPPLogVerbose(@"New archivedMessage: %@", archivedMessage);
-														 
+			
 			if (didCreateNewArchivedMessage) // [archivedMessage isInserted] doesn't seem to work
 			{
 				XMPPLogVerbose(@"Inserting message...");
@@ -523,21 +506,33 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			{
 				BOOL didCreateNewContact = NO;
 				
-				XMPPMessageArchiving_Contact_CoreDataObject *contact = [self contactForMessage:archivedMessage];
+				NSArray<XMPPMessageArchiving_Contact_CoreDataObject *> *contacts = [self contactsWithBareJidStr:archivedMessage.bareJid.bare streamBareJidStr:nil managedObjectContext:moc];
+				XMPPMessageArchiving_Contact_CoreDataObject *contact = [contacts lastObject];
 				XMPPLogVerbose(@"Previous contact: %@", contact);
+				
+				if ([contacts count] > 1) {
+					NSArray *contactsToDelete = [contacts subarrayWithRange:NSMakeRange(0, contacts.count - 1)];
+					for (XMPPMessageArchiving_Contact_CoreDataObject *contactToDelete in contactsToDelete) {
+						[self willDeleteMessage:contactToDelete];
+						[moc deleteObject:contactToDelete];
+					}
+				}
 				
 				if (contact == nil)
 				{
 					contact = (XMPPMessageArchiving_Contact_CoreDataObject *)
-					    [[NSManagedObject alloc] initWithEntity:[self contactEntity:moc]
-					             insertIntoManagedObjectContext:nil];
+					[[NSManagedObject alloc] initWithEntity:[self contactEntity:moc]
+							 insertIntoManagedObjectContext:nil];
 					
 					didCreateNewContact = YES;
+				}
+				else if ([contact.mostRecentMessageTimestamp timeIntervalSince1970] > [archivedMessage.timestamp timeIntervalSince1970])
+				{
+					return;
 				}
 				
 				contact.streamBareJidStr = archivedMessage.streamBareJidStr;
 				contact.bareJid = archivedMessage.bareJid;
-					
 				contact.mostRecentMessageTimestamp = archivedMessage.timestamp;
 				contact.mostRecentMessageBody = archivedMessage.body;
 				contact.mostRecentMessageOutgoing = @(isOutgoing);
