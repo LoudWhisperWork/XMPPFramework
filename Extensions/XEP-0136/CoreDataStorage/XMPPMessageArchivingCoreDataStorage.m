@@ -576,4 +576,27 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}];
 }
 
+- (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare
+{
+	[self scheduleBlock:^{
+		NSManagedObjectContext *moc = [self managedObjectContext];
+		
+		NSEntityDescription *messageEntity = [self messageEntity:moc];
+		NSFetchRequest *messageFetchRequest = [[NSFetchRequest alloc] init];
+		messageFetchRequest.entity = messageEntity;
+		messageFetchRequest.predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jabberIdentifierBare];
+		
+		NSBatchDeleteRequest *messageDeleteRequest = [[NSBatchDeleteRequest alloc] initWithFetchRequest:messageFetchRequest];
+		[moc executeRequest:messageDeleteRequest error:nil];
+		
+		NSEntityDescription *contactEntity = [self contactEntity:moc];
+		NSFetchRequest *contactFetchRequest = [[NSFetchRequest alloc] init];
+		contactFetchRequest.entity = contactEntity;
+		contactFetchRequest.predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jabberIdentifierBare];
+		
+		NSBatchDeleteRequest *contactDeleteRequest = [[NSBatchDeleteRequest alloc] initWithFetchRequest:contactFetchRequest];
+		[moc executeRequest:contactDeleteRequest error:nil];
+	}];
+}
+
 @end

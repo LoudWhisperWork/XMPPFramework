@@ -101,6 +101,8 @@
 **/
 - (void)archiveMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
 
+- (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare;
+
 @optional
 
 /**
