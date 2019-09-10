@@ -273,6 +273,31 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 }
 
+- (void)clear
+{
+	dispatch_block_t block = ^{ @autoreleasepool {
+		NSManagedObjectModel *mom = [self managedObjectModel];
+		if (self.databaseFileName)
+		{
+			NSString *docsPath = [self persistentStoreDirectory];
+			NSString *storePath = [docsPath stringByAppendingPathComponent:self.databaseFileName];
+			if (storePath)
+			{
+				if ([[NSFileManager defaultManager] fileExistsAtPath:storePath])
+				{
+					[[NSFileManager defaultManager] removeItemAtPath:storePath error:nil];
+				}
+			}
+		}
+	}};
+	
+	if (dispatch_get_specific(storageQueueTag))
+		block();
+	else
+		dispatch_sync(storageQueue, block);
+}
+
+
 - (NSString *)messageEntityName
 {
 	__block NSString *result = nil;
@@ -384,7 +409,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	return [super configureWithParent:aParent queue:queue];
 }
 
-- (void)archiveMessage:(XMPPMessage *)message outgoing:(BOOL)isOutgoing xmppStream:(XMPPStream *)xmppStream
+- (void)archiveMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream
 {
 	// Message should either have a body, or be a composing notification
 	
@@ -421,6 +446,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
+		BOOL isOutgoing = outgoing;
 		NSManagedObjectContext *moc = [self managedObjectContext];
 		NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
 		NSString *from;
@@ -432,6 +458,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			} else {
 				from = [[xmppStream myJID] bare];
 				to = [[message to] bare];
+				isOutgoing = YES;
 			}
 		} else {
 			if ([message from]) {
@@ -440,6 +467,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			} else {
 				from = [[xmppStream myJID] bare];
 				to = [[message to] bare];
+				isOutgoing = YES;
 			}
 		}
 		
