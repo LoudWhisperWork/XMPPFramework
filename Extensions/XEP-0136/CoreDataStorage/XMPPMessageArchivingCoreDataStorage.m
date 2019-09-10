@@ -276,19 +276,8 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 - (void)clear
 {
 	dispatch_block_t block = ^{ @autoreleasepool {
-		NSManagedObjectModel *mom = [self managedObjectModel];
-		if (self.databaseFileName)
-		{
-			NSString *docsPath = [self persistentStoreDirectory];
-			NSString *storePath = [docsPath stringByAppendingPathComponent:self.databaseFileName];
-			if (storePath)
-			{
-				if ([[NSFileManager defaultManager] fileExistsAtPath:storePath])
-				{
-					[[NSFileManager defaultManager] removeItemAtPath:storePath error:nil];
-				}
-			}
-		}
+		NSString *docsPath = [self persistentStoreDirectory];
+		[[NSFileManager defaultManager] removeItemAtPath:docsPath error:nil];
 	}};
 	
 	if (dispatch_get_specific(storageQueueTag))
