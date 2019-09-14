@@ -435,7 +435,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		BOOL isOutgoing = outgoing;
 		NSManagedObjectContext *moc = [self managedObjectContext];
 		NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
 		NSString *from;
@@ -447,18 +446,18 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			} else {
 				from = [[xmppStream myJID] bare];
 				to = [[message to] bare];
-				isOutgoing = YES;
 			}
 		} else {
 			if ([message from]) {
-				from = (isOutgoing ? [[xmppStream myJID] bare] : [[message from] bare]);
-				to = (isOutgoing ? [[message to] bare] : [[message from] bare]);
+				from = (outgoing ? [[xmppStream myJID] bare] : [[message from] bare]);
+				to = (outgoing ? [[message to] bare] : [[message from] bare]);
 			} else {
 				from = [[xmppStream myJID] bare];
 				to = [[message to] bare];
-				isOutgoing = YES;
 			}
 		}
+		
+		BOOL isOutgoing = (from == [[xmppStream myJID] bare]);
 		
 		// Fetch-n-Update OR Insert new message
 		
