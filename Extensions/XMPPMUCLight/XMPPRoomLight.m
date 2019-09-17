@@ -319,7 +319,6 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 	//		</iq>
 	
 	dispatch_block_t block = ^{ @autoreleasepool {
-		
 		NSString *iqID = [XMPPStream generateUUID];
 		NSXMLElement *iq = [NSXMLElement elementWithName:@"iq"];
 		[iq addAttributeWithName:@"id" stringValue:iqID];
@@ -353,6 +352,44 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 		[multicastDelegate xmppRoomLight:self didLeaveRoomLight:iq];
 	}else{
 		[multicastDelegate xmppRoomLight:self didFailToLeaveRoomLight:iq];
+	}
+}
+
+- (void)joinRoomLight {
+	dispatch_block_t block = ^{ @autoreleasepool {
+		NSString *iqID = [XMPPStream generateUUID];
+		NSXMLElement *iq = [NSXMLElement elementWithName:@"iq"];
+		[iq addAttributeWithName:@"id" stringValue:iqID];
+		[iq addAttributeWithName:@"to" stringValue:self.roomJID.full];
+		[iq addAttributeWithName:@"type" stringValue:@"set"];
+		
+		NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:XMPPRoomLightAffiliations];
+		NSXMLElement *user = [NSXMLElement elementWithName:@"user"];
+		[user addAttributeWithName:@"affiliation" stringValue:@"member"];
+		user.stringValue = self->xmppStream.myJID.bare;
+		
+		[query addChild:user];
+		[iq addChild:query];
+		
+		[self->responseTracker addID:iqID
+						target:self
+					  selector:@selector(handleJoinRoomLight:withInfo:)
+					   timeout:60.0];
+		
+		[self->xmppStream sendElement:iq];
+	}};
+	
+	if (dispatch_get_specific(moduleQueueTag))
+		block();
+	else
+		dispatch_async(moduleQueue, block);
+}
+
+- (void)handleJoinRoomLight:(XMPPIQ *)iq withInfo:(id <XMPPTrackingInfo>)info{
+	if ([[iq type] isEqualToString:@"result"]){
+		[multicastDelegate xmppRoomLight:self didJoinRoomLight:iq];
+	}else{
+		[multicastDelegate xmppRoomLight:self didFailToJoinRoomLight:iq];
 	}
 }
 
