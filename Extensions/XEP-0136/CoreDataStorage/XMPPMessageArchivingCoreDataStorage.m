@@ -457,7 +457,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			}
 		}
 		
-		BOOL isOutgoing = (from == [[xmppStream myJID] bare]);
+		BOOL isOutgoing = ([from isEqualToString:[[xmppStream myJID] bare]]);
 		
 		// Fetch-n-Update OR Insert new message
 		
