@@ -122,7 +122,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
                 [self.outstandingQueryIds removeObject:queryId];
             }
             
-            [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet];
+            [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId];
             return;
         }
         
