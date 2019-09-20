@@ -482,20 +482,17 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			BOOL didCreateNewArchivedMessage = NO;
 			if (archivedMessage == nil)
 			{
-				archivedMessage = (XMPPMessageArchiving_Message_CoreDataObject *)
-				[[NSManagedObject alloc] initWithEntity:[self messageEntity:moc]
-						 insertIntoManagedObjectContext:nil];
-				
+				archivedMessage = (XMPPMessageArchiving_Message_CoreDataObject *)[[NSManagedObject alloc] initWithEntity:[self messageEntity:moc] insertIntoManagedObjectContext:nil];
+				archivedMessage.body = body;
+				archivedMessage.bareJid = [XMPPJID jidWithString:to];
+				archivedMessage.streamBareJidStr = from;
+				archivedMessage.timestamp = date;
+				archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
+				archivedMessage.isOutgoing = isOutgoing;
 				didCreateNewArchivedMessage = YES;
 			}
 			
 			archivedMessage.message = message;
-			archivedMessage.body = body;
-			archivedMessage.bareJid = [XMPPJID jidWithString:to];
-			archivedMessage.streamBareJidStr = from;
-			archivedMessage.timestamp = date;
-			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
-			archivedMessage.isOutgoing = isOutgoing;
 			archivedMessage.isComposing = isComposing;
 			
 			XMPPLogVerbose(@"New archivedMessage: %@", archivedMessage);
@@ -518,7 +515,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			
 			// Create or update contact (if message with actual content)
 			
-			if ([self messageContainsRelevantContent:message])
+			if (didCreateNewArchivedMessage && [self messageContainsRelevantContent:message])
 			{
 				BOOL didCreateNewContact = NO;
 				
