@@ -111,6 +111,9 @@ static NSString *const QueryIdAttributeName = @"queryid";
 		
 		NSXMLElement *finElement = [iq elementForName:@"fin" xmlns:XMLNS_XMPP_MAM];
         NSString *queryId = [finElement attributeStringValueForName:QueryIdAttributeName];
+		if (!queryId) {
+            queryId = [iq attributeStringValueForName:@"id"];
+        }
 		NSXMLElement *setElement = [finElement elementForName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
 		
         XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
