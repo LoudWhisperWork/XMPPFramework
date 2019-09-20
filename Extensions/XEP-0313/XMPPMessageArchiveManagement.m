@@ -110,10 +110,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
 	if ([[iq type] isEqualToString:@"result"]) {
 		
 		NSXMLElement *finElement = [iq elementForName:@"fin" xmlns:XMLNS_XMPP_MAM];
-        NSString *queryId = [finElement attributeStringValueForName:QueryIdAttributeName];
-		if (!queryId) {
-            queryId = [iq attributeStringValueForName:@"id"];
-        }
+        NSString *queryId = [[[trackerInfo element] elementForName:@"query"] attributeStringValueForName:@"queryid"];
 		NSXMLElement *setElement = [finElement elementForName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
 		
         XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
