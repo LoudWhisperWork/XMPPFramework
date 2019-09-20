@@ -217,7 +217,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     return NO;
 }
 
-- (void)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body outgoing:(BOOL)outgoing shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage xmppStream:(XMPPStream *)xmppStream {
+- (void)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body outgoing:(BOOL)outgoing shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream {
 	NSManagedObjectContext *moc = [self managedObjectContext];
 	NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
 	NSString *from;
@@ -573,7 +573,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		[self saveMessageToCoreData:message body:body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage xmppStream:xmppStream];
+		[self saveMessageToCoreData:message body:body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream];
 	}];
 }
 
@@ -598,10 +598,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 					NSString *body = [[message elementForName:@"body"] stringValue];
 					if ([newMessage isGroupChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO xmppStream:xmppStream];
+						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream];
 					} else if ([newMessage isChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] bare] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO xmppStream:xmppStream];
+						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream];
 					}
 				}
 			}
