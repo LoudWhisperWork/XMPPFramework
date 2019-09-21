@@ -71,10 +71,11 @@ static NSString *const QueryIdAttributeName = @"queryid";
         [formElement addChild:field];
     }
 
-    [self retrieveMessageArchiveAt:archiveJID withFormElement:formElement resultSet:resultSet];
+    NSString *newQueryId = [XMPPStream generateUUID];
+    [self retrieveMessageArchiveAt:archiveJID withFormElement:formElement resultSet:resultSet queryId:newQueryId];
 }
 
-- (void)retrieveMessageArchiveAt:(XMPPJID *)archiveJID withFormElement:(NSXMLElement *)formElement resultSet:(XMPPResultSet *)resultSet {
+- (void)retrieveMessageArchiveAt:(XMPPJID *)archiveJID withFormElement:(NSXMLElement *)formElement resultSet:(XMPPResultSet *)resultSet queryId:(NSString *)queryId {
 	[self performBlockAsync:^{
 		XMPPIQ *iq = [XMPPIQ iqWithType:@"set"];
 		[iq addAttributeWithName:@"id" stringValue:[XMPPStream generateUUID]];
@@ -83,7 +84,6 @@ static NSString *const QueryIdAttributeName = @"queryid";
 			[iq addAttributeWithName:@"to" stringValue:[archiveJID full]];
 		}
 
-		NSString *queryId = [XMPPStream generateUUID];
 		[self->_outstandingQueryIds addObject:queryId];
 		
 		NSXMLElement *queryElement = [NSXMLElement elementWithName:@"query" xmlns:XMLNS_XMPP_MAM];
@@ -125,13 +125,16 @@ static NSString *const QueryIdAttributeName = @"queryid";
             [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId];
             return;
         }
+		
+		NSString *newQueryId = [XMPPStream generateUUID];
+        [multicastDelegate xmppMessageArchiveManagement:self didContinueReceivingMessagesWithOldQueryId:queryId newQueryId:newQueryId];
         
         XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
         XMPPJID *originalArchiveJID = [originalIq to];
         NSXMLElement *originalFormElement = [[[originalIq elementForName:@"query"] elementForName:@"x"] copy];
         XMPPResultSet *pagingResultSet = [[XMPPResultSet alloc] initWithMax:self.resultAutomaticPagingPageSize after:lastId];
         
-        [self retrieveMessageArchiveAt:originalArchiveJID withFormElement:originalFormElement resultSet:pagingResultSet];
+        [self retrieveMessageArchiveAt:originalArchiveJID withFormElement:originalFormElement resultSet:pagingResultSet queryId:newQueryId];
 	} else {
 		[multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:iq];
 	}

@@ -299,7 +299,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		// Create or update contact (if message with actual content)
 		
-		if (didCreateNewArchivedMessage && [self messageContainsRelevantContent:message])
+		if (didCreateNewArchivedMessage && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody]))
 		{
 			BOOL didCreateNewContact = NO;
 			
@@ -596,7 +596,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				}
 				
 				if (newMessage && ![newMessage isErrorMessage]) {
-					NSString *body = [[message elementForName:@"body"] stringValue];
+					NSString *body = [[newMessage elementForName:@"body"] stringValue];
 					if ([newMessage isGroupChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
 						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream];
