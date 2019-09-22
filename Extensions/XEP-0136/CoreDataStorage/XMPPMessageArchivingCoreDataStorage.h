@@ -48,6 +48,8 @@ extern NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY;
 - (NSEntityDescription *)messageEntity:(NSManagedObjectContext *)moc;
 - (NSEntityDescription *)contactEntity:(NSManagedObjectContext *)moc;
 
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion;
+
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
 
 - (XMPPMessageArchiving_Contact_CoreDataObject *)contactForMessage:(XMPPMessageArchiving_Message_CoreDataObject *)msg;

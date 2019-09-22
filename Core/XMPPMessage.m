@@ -8,6 +8,21 @@
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
 #endif
 
+@implementation XMPPMessageModel
+
+- (instancetype)initWithSender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date outgoing:(BOOL)outgoing {
+    self = [super init];
+    if (self) {
+        _sender = [XMPPJID jidWithString:sender];
+        _recipient = recipient;
+        _text = text;
+        _date = date;
+        _isOutgoing = outgoing;
+    }
+    return self;
+}
+
+@end
 
 @implementation XMPPMessage
 

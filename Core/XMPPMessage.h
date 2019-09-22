@@ -12,6 +12,19 @@
 **/
 
 NS_ASSUME_NONNULL_BEGIN
+
+@interface XMPPMessageModel : NSObject
+
+- (instancetype)initWithSender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date outgoing:(BOOL)outgoing;
+
+@property (nonatomic, readonly, nonnull) XMPPJID *sender;
+@property (nonatomic, readonly, nonnull) NSString *recipient;
+@property (nonatomic, readonly, nonnull) NSString *text;
+@property (nonatomic, readonly, nonnull) NSDate *date;
+@property (nonatomic, readonly) BOOL isOutgoing;
+
+@end
+
 @interface XMPPMessage : XMPPElement
 
 // Converts an NSXMLElement to an XMPPMessage element in place (no memory allocations or copying)

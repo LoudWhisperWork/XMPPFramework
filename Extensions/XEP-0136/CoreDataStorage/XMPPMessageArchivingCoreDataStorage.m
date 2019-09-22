@@ -353,6 +353,34 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion {
+    [self scheduleBlock:^{
+        NSManagedObjectContext *moc = [self managedObjectContext];
+        NSEntityDescription *messageEntity = [self messageEntity:moc];
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
+        NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
+        
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        fetchRequest.entity = messageEntity;
+        fetchRequest.predicate = predicate;
+        fetchRequest.sortDescriptors = @[sortDescriptor];
+        
+        NSMutableArray<XMPPMessageModel *> *messages = [NSMutableArray new];
+        NSError *error = nil;
+        NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
+        if (results && [results count] > 0) {
+            for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
+                if (result.body && result.streamBareJidStr && result.bareJidStr) {
+                    BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
+					XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithSender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp outgoing:outgoing];
+                    [messages addObject:message];
+                }
+            }
+        }
+        completion(messages);
+    }];
+}
+
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream {
     NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
     NSString *from;
