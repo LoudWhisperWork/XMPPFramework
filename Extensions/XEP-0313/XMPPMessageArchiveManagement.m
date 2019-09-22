@@ -115,6 +115,9 @@ static NSString *const QueryIdAttributeName = @"queryid";
 		
         XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
         NSString *lastId = [resultSet elementForName:@"last"].stringValue;
+		
+		XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
+        XMPPJID *originalArchiveJID = [originalIq to];
         
         if (self.resultAutomaticPagingPageSize == 0 || [finElement attributeBoolValueForName:@"complete"] || !lastId) {
             
@@ -122,15 +125,13 @@ static NSString *const QueryIdAttributeName = @"queryid";
                 [self.outstandingQueryIds removeObject:queryId];
             }
             
-            [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId];
+			[multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:originalArchiveJID];
             return;
         }
 		
 		NSString *newQueryId = [XMPPStream generateUUID];
         [multicastDelegate xmppMessageArchiveManagement:self didContinueReceivingMessagesWithOldQueryId:queryId newQueryId:newQueryId];
         
-        XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
-        XMPPJID *originalArchiveJID = [originalIq to];
         NSXMLElement *originalFormElement = [[[originalIq elementForName:@"query"] elementForName:@"x"] copy];
         XMPPResultSet *pagingResultSet = [[XMPPResultSet alloc] initWithMax:self.resultAutomaticPagingPageSize after:lastId];
         

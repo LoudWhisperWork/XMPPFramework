@@ -220,28 +220,17 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 
 - (void)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body outgoing:(BOOL)outgoing shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream {
 	NSManagedObjectContext *moc = [self managedObjectContext];
-	NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
-	NSString *from;
-	NSString *to;
-	if ([message isGroupChatMessage]) {
-		if ([[message from] resource]) {
-			from = [[message from] resource];
-			to = [[message from] bare];
-		} else {
-			from = [[xmppStream myJID] bare];
-			to = [[message to] bare];
-		}
-	} else {
-		if ([message from]) {
-			from = (outgoing ? [[xmppStream myJID] bare] : [[message from] bare]);
-			to = (outgoing ? [[message to] bare] : [[message from] bare]);
-		} else {
-			from = [[xmppStream myJID] bare];
-			to = [[message to] bare];
-		}
-	}
-	
-	BOOL isOutgoing = ([from isEqualToString:[[xmppStream myJID] bare]]);
+    NSDictionary *parsedMessageParameters = [self parsedMessageParametersFromMessage:message outgoing:outgoing xmppStream:xmppStream];
+    
+    NSDate *date = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
+    BOOL isOutgoing = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_OUTGOING_KEY] boolValue];
+    NSString *from = [parsedMessageParameters objectForKey:XMPP_MESSAGE_FROM_KEY];
+    NSString *to = [parsedMessageParameters objectForKey:XMPP_MESSAGE_TO_KEY];
+    
+    BOOL dataIsCorrect = (date && [date isKindOfClass:[NSDate class]] && from && [from isKindOfClass:[NSString class]] && to && [to isKindOfClass:[NSString class]]);
+    if (!dataIsCorrect) {
+        return;
+    }
 	
 	// Fetch-n-Update OR Insert new message
 	
@@ -358,6 +347,42 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream {
+    NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
+    NSString *from;
+    NSString *to;
+    if ([message isGroupChatMessage]) {
+        if ([[message from] resource]) {
+            from = [[message from] resource];
+            to = [[message from] bare];
+        } else {
+            from = [[xmppStream myJID] bare];
+            to = [[message to] bare];
+        }
+    } else {
+        if ([message from]) {
+            from = (outgoing ? [[xmppStream myJID] bare] : [[message from] bare]);
+            to = (outgoing ? [[message to] bare] : [[message from] bare]);
+        } else {
+            from = [[xmppStream myJID] bare];
+            to = [[message to] bare];
+        }
+    }
+    
+    BOOL isOutgoing = (from != nil && [from isEqualToString:[[xmppStream myJID] bare]]);
+    
+    NSMutableDictionary *parsedParameters = [NSMutableDictionary new];
+    [parsedParameters setObject:date forKey:XMPP_MESSAGE_DATE_KEY];
+    [parsedParameters setObject:[NSNumber numberWithBool:isOutgoing] forKey:XMPP_MESSAGE_IS_OUTGOING_KEY];
+    if (from) {
+        [parsedParameters setObject:from forKey:XMPP_MESSAGE_FROM_KEY];
+    }
+    if (to) {
+        [parsedParameters setObject:to forKey:XMPP_MESSAGE_TO_KEY];
+    }
+	return parsedParameters;
+}
 
 - (XMPPMessageArchiving_Contact_CoreDataObject *)contactForMessage:(XMPPMessageArchiving_Message_CoreDataObject *)msg
 {
