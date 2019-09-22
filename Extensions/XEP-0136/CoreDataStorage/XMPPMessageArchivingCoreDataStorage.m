@@ -19,6 +19,11 @@
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
 
+NSString *const XMPP_MESSAGE_FROM_KEY = @"XMPP_MESSAGE_FROM";
+NSString *const XMPP_MESSAGE_TO_KEY = @"XMPP_MESSAGE_TO";
+NSString *const XMPP_MESSAGE_DATE_KEY = @"XMPP_MESSAGE_DATE";
+NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY = @"XMPP_MESSAGE_IS_OUTGOING";
+
 @interface XMPPMessageArchivingCoreDataStorage ()
 {
 	NSString *messageEntityName;
