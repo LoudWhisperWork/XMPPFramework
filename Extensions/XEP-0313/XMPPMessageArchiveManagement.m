@@ -106,9 +106,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
 }
 
 - (void)handleMessageArchiveIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)trackerInfo {
-	
 	if ([[iq type] isEqualToString:@"result"]) {
-		
 		NSXMLElement *finElement = [iq elementForName:@"fin" xmlns:XMLNS_XMPP_MAM];
         NSString *queryId = [[[trackerInfo element] elementForName:@"query"] attributeStringValueForName:@"queryid"];
 		NSXMLElement *setElement = [finElement elementForName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
@@ -118,14 +116,22 @@ static NSString *const QueryIdAttributeName = @"queryid";
 		
 		XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
         XMPPJID *originalArchiveJID = [originalIq to];
+        XMPPJID *chatJID = originalArchiveJID;
+        
+        NSArray *fields = [[[[trackerInfo element] elementForName:@"query"] elementForName:@"x"] elementsForName:@"field"];
+        for (NSXMLElement *field in fields) {
+            NSString *withAttribute = [[field attributeForName:@"var"] stringValue];
+            if (withAttribute && [withAttribute isEqualToString:@"with"]) {
+                chatJID = [XMPPJID jidWithString:[field stringValue]];
+            }
+        }
         
         if (self.resultAutomaticPagingPageSize == 0 || [finElement attributeBoolValueForName:@"complete"] || !lastId) {
-            
             if (queryId.length) {
                 [self.outstandingQueryIds removeObject:queryId];
             }
             
-			[multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:originalArchiveJID];
+			[multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:chatJID];
             return;
         }
 		
