@@ -120,7 +120,7 @@ extern const NSTimeInterval XMPPIDTrackerTimeoutNone;
 NS_ASSUME_NONNULL_BEGIN
 @interface XMPPIDTracker : NSObject
 
-- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)init;
 
 - (instancetype)initWithDispatchQueue:(dispatch_queue_t)queue;
 
@@ -131,11 +131,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)addElement:(XMPPElement *)element target:(nullable id)target selector:(nullable SEL)selector timeout:(NSTimeInterval)timeout;
 
 - (void)addID:(NSString *)elementID
-        block:(void (^_Nullable)(id _Nullable obj, id <XMPPTrackingInfo> info))block
+        block:(void (^_Nullable)(id _Nullable obj, id <XMPPTrackingInfo> info))trackingBlock
       timeout:(NSTimeInterval)timeout;
 
 - (void)addElement:(XMPPElement *)element
-             block:(void (^_Nullable)(id _Nullable obj, id <XMPPTrackingInfo> info))block
+             block:(void (^_Nullable)(id _Nullable obj, id <XMPPTrackingInfo> info))trackingBlock
            timeout:(NSTimeInterval)timeout;
 
 - (void)addID:(NSString *)elementID trackingInfo:(id <XMPPTrackingInfo>)trackingInfo;

@@ -358,7 +358,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
-        NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
+        NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES];
         
         NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
         fetchRequest.entity = messageEntity;
