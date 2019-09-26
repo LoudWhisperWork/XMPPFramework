@@ -165,6 +165,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 														conversation:(NSString *)conversation
 																body:(NSString *)body
 																date:(NSDate *)date
+													resultIdentifier:(NSString *)resultIdentifier
 												managedObjectContext:(NSManagedObjectContext *)moc
 {
 	XMPPMessageArchiving_Message_CoreDataObject *result = nil;
@@ -179,7 +180,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	
 	NSDate *minTimestamp = [date dateByAddingTimeInterval:-60];
 	NSDate *maxTimestamp = [date dateByAddingTimeInterval: 60];
-	NSPredicate *predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@ AND streamBareJidStr == %@ AND body == %@ AND timestamp BETWEEN {%@, %@}", conversation, from, body, minTimestamp, maxTimestamp];
+	NSPredicate *predicate;
+	if (resultIdentifier) {
+		predicate = [NSPredicate predicateWithFormat:@"identifier == %@ AND bareJidStr == %@ AND streamBareJidStr == %@", resultIdentifier, conversation, from];
+	} else {
+		predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@ AND streamBareJidStr == %@ AND body == %@ AND timestamp BETWEEN {%@, %@}", conversation, from, body, minTimestamp, maxTimestamp];
+	}
 	
 	NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
 	
@@ -228,20 +234,21 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	NSManagedObjectContext *moc = [self managedObjectContext];
     NSDictionary *parsedMessageParameters = [self parsedMessageParametersFromMessage:message outgoing:outgoing xmppStream:xmppStream];
     
+	NSString *resultIdentifier = [[message attributeForName:@"resultId"] stringValue];
 	NSString *identifier = [parsedMessageParameters objectForKey:XMPP_MESSAGE_IDENTIFIER_KEY];
     NSDate *date = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
     BOOL isOutgoing = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_OUTGOING_KEY] boolValue];
     NSString *from = [parsedMessageParameters objectForKey:XMPP_MESSAGE_FROM_KEY];
     NSString *to = [parsedMessageParameters objectForKey:XMPP_MESSAGE_TO_KEY];
     
-    BOOL dataIsCorrect = (date && [date isKindOfClass:[NSDate class]] && from && [from isKindOfClass:[NSString class]] && to && [to isKindOfClass:[NSString class]]);
+    BOOL dataIsCorrect = (identifier && [identifier isKindOfClass:[NSString class]] && date && [date isKindOfClass:[NSDate class]] && from && [from isKindOfClass:[NSString class]] && to && [to isKindOfClass:[NSString class]]);
     if (!dataIsCorrect) {
         return;
     }
 	
 	// Fetch-n-Update OR Insert new message
 	
-	XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageFrom:from conversation:to body:body date:date managedObjectContext:moc];
+	XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageFrom:from conversation:to body:body date:date resultIdentifier:resultIdentifier managedObjectContext:moc];
 	
 	if (shouldDeleteComposingMessage)
 	{
