@@ -280,6 +280,8 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
 		}
 		
+		BOOL didChangeArchivedMessageIdentifier = (archivedMessage.identifier != identifier);
+		
 		archivedMessage.identifier = identifier;
 		archivedMessage.message = message;
 		archivedMessage.isComposing = isComposing;
@@ -304,7 +306,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		// Create or update contact (if message with actual content)
 		
-		if (didCreateNewArchivedMessage && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody]))
+		if ((didCreateNewArchivedMessage || didChangeArchivedMessageIdentifier) && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody]))
 		{
 			BOOL didCreateNewContact = NO;
 			
@@ -333,6 +335,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				return;
 			}
 			
+			contact.identifier = identifier;
 			contact.streamBareJidStr = archivedMessage.streamBareJidStr;
 			contact.bareJid = archivedMessage.bareJid;
 			contact.mostRecentMessageTimestamp = archivedMessage.timestamp;

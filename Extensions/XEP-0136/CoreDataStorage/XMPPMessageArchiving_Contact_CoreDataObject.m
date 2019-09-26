@@ -11,6 +11,7 @@
 
 @implementation XMPPMessageArchiving_Contact_CoreDataObject
 
+@dynamic identifier;
 @dynamic bareJid, primitiveBareJid;
 @dynamic bareJidStr, primitiveBareJidStr;
 @dynamic mostRecentMessageTimestamp;
