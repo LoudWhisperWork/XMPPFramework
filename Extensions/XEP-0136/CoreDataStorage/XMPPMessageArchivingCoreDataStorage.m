@@ -223,7 +223,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     return NO;
 }
 
-- (void)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body outgoing:(BOOL)outgoing shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream {
+- (void)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body outgoing:(BOOL)outgoing shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier {
 	NSManagedObjectContext *moc = [self managedObjectContext];
     NSDictionary *parsedMessageParameters = [self parsedMessageParametersFromMessage:message outgoing:outgoing xmppStream:xmppStream];
     
@@ -268,6 +268,14 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
 			didCreateNewArchivedMessage = YES;
+		}
+		
+		if archivedMessage.archiveIdentifier == nil {
+			archivedMessage.archiveIdentifier = archiveIdentifier
+		}
+		
+		if archivedMessage.previousArchiveIdentifier == nil {
+			archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier
 		}
 		
 		archivedMessage.message = message;
@@ -632,11 +640,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		[self saveMessageToCoreData:message body:body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream];
+		[self saveMessageToCoreData:message body:body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil];
 	}];
 }
 
-- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream {
+- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier {
 	[self scheduleBlock:^{
 		for (XMPPMessage *message in messages) {
 			NSXMLElement *resultElement = [message mamResult];
@@ -657,10 +665,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 					NSString *body = [[newMessage elementForName:@"body"] stringValue];
 					if ([newMessage isGroupChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream];
+						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
 					} else if ([newMessage isChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] bare] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream];
+						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
 					}
 				}
 			}

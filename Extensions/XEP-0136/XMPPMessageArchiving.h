@@ -100,7 +100,7 @@
  * 
 **/
 - (void)archiveMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
-- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream;
+- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier;
 
 - (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare;
 
