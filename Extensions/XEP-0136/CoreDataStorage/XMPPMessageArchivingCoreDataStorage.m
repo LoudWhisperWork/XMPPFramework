@@ -395,7 +395,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 }
 
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream {
-	NSString *resultIdentifier = [[self attributeForName:@"resultId"] stringValue];
+	NSString *resultIdentifier = [[message attributeForName:@"resultId"] stringValue];
 	NSString *identifier = (resultIdentifier != nil ? resultIdentifier : [xmppStream generateUUID]);
 	NSDate *delayedDeliveryDate = [message delayedDeliveryDate];
     NSDate *date = (delayedDeliveryDate != nil ? delayedDeliveryDate : [NSDate new]);
