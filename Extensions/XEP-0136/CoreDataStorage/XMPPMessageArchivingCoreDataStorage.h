@@ -5,6 +5,7 @@
 #import "XMPPMessageArchiving_Message_CoreDataObject.h"
 #import "XMPPMessageArchiving_Contact_CoreDataObject.h"
 
+extern NSString *const XMPP_MESSAGE_IDENTIFIER_KEY;
 extern NSString *const XMPP_MESSAGE_FROM_KEY;
 extern NSString *const XMPP_MESSAGE_TO_KEY;
 extern NSString *const XMPP_MESSAGE_DATE_KEY;
@@ -48,7 +49,7 @@ extern NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY;
 - (NSEntityDescription *)messageEntity:(NSManagedObjectContext *)moc;
 - (NSEntityDescription *)contactEntity:(NSManagedObjectContext *)moc;
 
-- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion;
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid startingFromDate:(NSDate *)startingDate count:(NSInteger)count xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion;
 
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
 

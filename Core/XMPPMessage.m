@@ -10,13 +10,16 @@
 
 @implementation XMPPMessageModel
 
-- (instancetype)initWithSender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date outgoing:(BOOL)outgoing {
+- (instancetype)initWithIdentifier:(nonnull NSString *)identifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing {
     self = [super init];
     if (self) {
+        _identifier = identifier;
         _sender = [XMPPJID jidWithString:sender];
         _recipient = recipient;
         _text = text;
         _date = date;
+        _archiveIdentifier = archiveIdentifier;
+        _previousArchiveIdentifier = previousArchiveIdentifier;
         _isOutgoing = outgoing;
     }
     return self;

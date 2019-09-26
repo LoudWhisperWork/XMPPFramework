@@ -19,6 +19,7 @@
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
 
+NSString *const XMPP_MESSAGE_IDENTIFIER_KEY = @"XMPP_MESSAGE_IDENTIFIER";
 NSString *const XMPP_MESSAGE_FROM_KEY = @"XMPP_MESSAGE_FROM";
 NSString *const XMPP_MESSAGE_TO_KEY = @"XMPP_MESSAGE_TO";
 NSString *const XMPP_MESSAGE_DATE_KEY = @"XMPP_MESSAGE_DATE";
@@ -227,6 +228,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	NSManagedObjectContext *moc = [self managedObjectContext];
     NSDictionary *parsedMessageParameters = [self parsedMessageParametersFromMessage:message outgoing:outgoing xmppStream:xmppStream];
     
+	NSString *identifier = [parsedMessageParameters objectForKey:XMPP_MESSAGE_IDENTIFIER_KEY];
     NSDate *date = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
     BOOL isOutgoing = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_OUTGOING_KEY] boolValue];
     NSString *from = [parsedMessageParameters objectForKey:XMPP_MESSAGE_FROM_KEY];
@@ -270,14 +272,15 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			didCreateNewArchivedMessage = YES;
 		}
 		
-		if archivedMessage.archiveIdentifier == nil {
-			archivedMessage.archiveIdentifier = archiveIdentifier
+		if (archivedMessage.archiveIdentifier == nil) {
+			archivedMessage.archiveIdentifier = archiveIdentifier;
 		}
 		
-		if archivedMessage.previousArchiveIdentifier == nil {
-			archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier
+		if (archivedMessage.previousArchiveIdentifier == nil) {
+			archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
 		}
 		
+		archivedMessage.identifier = identifier;
 		archivedMessage.message = message;
 		archivedMessage.isComposing = isComposing;
 		
@@ -361,7 +364,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion {
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion {
     [self scheduleBlock:^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
@@ -372,6 +375,8 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
         fetchRequest.entity = messageEntity;
         fetchRequest.predicate = predicate;
         fetchRequest.sortDescriptors = @[sortDescriptor];
+        fetchRequest.fetchLimit = fetchLimit;
+        fetchRequest.fetchOffset = fetchOffset;
         
         NSMutableArray<XMPPMessageModel *> *messages = [NSMutableArray new];
         NSError *error = nil;
@@ -380,7 +385,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
                 if (result.body && result.streamBareJidStr && result.bareJidStr) {
                     BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
-					XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithSender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp outgoing:outgoing];
+					XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing];
                     [messages addObject:message];
                 }
             }
@@ -390,7 +395,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 }
 
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream {
-    NSDate *date = ([message delayedDeliveryDate] != nil ? [message delayedDeliveryDate] : [NSDate new]);
+	NSString *resultIdentifier = [[self attributeForName:@"resultId"] stringValue];
+	NSString *identifier = (resultIdentifier != nil ? resultIdentifier : [xmppStream generateUUID]);
+	NSDate *delayedDeliveryDate = [message delayedDeliveryDate];
+    NSDate *date = (delayedDeliveryDate != nil ? delayedDeliveryDate : [NSDate new]);
     NSString *from;
     NSString *to;
     if ([message isGroupChatMessage]) {
@@ -414,6 +422,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     BOOL isOutgoing = (from != nil && [from isEqualToString:[[xmppStream myJID] bare]]);
     
     NSMutableDictionary *parsedParameters = [NSMutableDictionary new];
+	[parsedParameters setObject:identifier forKey:XMPP_MESSAGE_IDENTIFIER_KEY];
     [parsedParameters setObject:date forKey:XMPP_MESSAGE_DATE_KEY];
     [parsedParameters setObject:[NSNumber numberWithBool:isOutgoing] forKey:XMPP_MESSAGE_IS_OUTGOING_KEY];
     if (from) {
