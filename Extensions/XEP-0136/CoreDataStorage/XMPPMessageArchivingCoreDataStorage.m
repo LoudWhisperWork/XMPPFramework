@@ -55,10 +55,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 
 /**
  * Documentation from the superclass (XMPPCoreDataStorage):
- * 
+ *
  * If your subclass needs to do anything for init, it can do so easily by overriding this method.
  * All public init methods will invoke this method at the end of their implementation.
- * 
+ *
  * Important: If overriden you must invoke [super commonInit] at some point.
 **/
 - (void)commonInit
@@ -73,10 +73,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 
 /**
  * Documentation from the superclass (XMPPCoreDataStorage):
- * 
+ *
  * Override me, if needed, to provide customized behavior.
  * For example, you may want to perform cleanup of any non-persistent data before you start using the database.
- * 
+ *
  * The default implementation does nothing.
 **/
 - (void)didCreateManagedObjectContext
@@ -160,6 +160,39 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark Private API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (XMPPMessageArchiving_Message_CoreDataObject *)archivedMessageWithResultIdentifier:(NSString *)resultIdentifier
+                                                                        conversation:(NSString *)conversation
+                                                                managedObjectContext:(NSManagedObjectContext *)moc
+{
+    XMPPMessageArchiving_Message_CoreDataObject *result = nil;
+    
+    NSEntityDescription *messageEntity = [self messageEntity:moc];
+    
+
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"identifier == %@ AND bareJidStr == %@", resultIdentifier, conversation];
+    NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
+    
+    NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+    fetchRequest.entity = messageEntity;
+    fetchRequest.predicate = predicate;
+    fetchRequest.sortDescriptors = @[sortDescriptor];
+    fetchRequest.fetchLimit = 1;
+    
+    NSError *error = nil;
+    NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
+    
+    if (results == nil || error)
+    {
+        XMPPLogError(@"%@: %@ - Error executing fetchRequest: %@", THIS_FILE, THIS_METHOD, fetchRequest);
+    }
+    else
+    {
+        result = (XMPPMessageArchiving_Message_CoreDataObject *)[results lastObject];
+    }
+    
+    return result;
+}
 
 - (XMPPMessageArchiving_Message_CoreDataObject *)archivedMessageFrom:(NSString *)from
 														conversation:(NSString *)conversation
@@ -373,7 +406,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion {
-    [self scheduleBlock:^{
+    dispatch_block_t block = ^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
         
@@ -413,7 +446,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             }
         }
         completion(messages);
-    }];
+    };
+    
+    if (dispatch_get_specific(storageQueueTag))
+        block();
+    else
+        dispatch_sync(storageQueue, block);
 }
 
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream {
@@ -675,8 +713,18 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}];
 }
 
-- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier {
+- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages chatJID:(XMPPJID *)chatJID xmppStream:(XMPPStream *)xmppStream beforeMessageIdentifier:(NSString *)messageIdentifier {
 	[self scheduleBlock:^{
+        NSManagedObjectContext *moc = [self managedObjectContext];
+        NSString *archiveIdentifier = [xmppStream generateUUID];
+        XMPPMessageArchiving_Message_CoreDataObject *beforeMessage = [self archivedMessageWithResultIdentifier:messageIdentifier conversation:chatJID.bare managedObjectContext:moc];
+        NSString *previousArchiveIdentifier;
+        if (beforeMessage && [beforeMessage archiveIdentifier]) {
+            previousArchiveIdentifier = [beforeMessage archiveIdentifier];
+        } else {
+            previousArchiveIdentifier = archiveIdentifier;
+        }
+        
 		for (XMPPMessage *message in messages) {
 			NSXMLElement *resultElement = [message mamResult];
 			XMPPMessage *internalMessage = [resultElement forwardedMessage];
