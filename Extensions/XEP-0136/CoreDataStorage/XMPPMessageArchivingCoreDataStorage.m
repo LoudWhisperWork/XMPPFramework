@@ -376,25 +376,39 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     [self scheduleBlock:^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
-        NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES];
         
-        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
-        fetchRequest.entity = messageEntity;
-        fetchRequest.predicate = predicate;
-        fetchRequest.sortDescriptors = @[sortDescriptor];
-        fetchRequest.fetchLimit = fetchLimit;
-        fetchRequest.fetchOffset = fetchOffset;
+        NSFetchRequest *objectIDsFetchRequest = [[NSFetchRequest alloc] init];
+        objectIDsFetchRequest.entity = messageEntity;
+        objectIDsFetchRequest.predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
+        objectIDsFetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
+        objectIDsFetchRequest.resultType = NSManagedObjectIDResultType;
+        
+        NSError *error = nil;
+        NSArray *objectIDsResults = [moc executeFetchRequest:objectIDsFetchRequest error:&error];
+        NSArray<NSManagedObjectID *> *objectIDs;
+        if ([objectIDsResults count] > fetchOffset) {
+            if ([objectIDsResults count] > fetchOffset + fetchLimit) {
+                objectIDs = [objectIDsResults subarrayWithRange:NSMakeRange(fetchOffset, fetchLimit)];
+            } else {
+                objectIDs = [objectIDsResults subarrayWithRange:NSMakeRange(fetchOffset, ([objectIDsResults count] - fetchOffset))];
+            }
+        }
         
         NSMutableArray<XMPPMessageModel *> *messages = [NSMutableArray new];
-        NSError *error = nil;
-        NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
-        if (results && [results count] > 0) {
-            for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
-                if (result.body && result.streamBareJidStr && result.bareJidStr) {
-                    BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
-					XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing];
-                    [messages addObject:message];
+        if (objectIDs && [objectIDs count] > 0) {
+            NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+            fetchRequest.entity = messageEntity;
+            fetchRequest.predicate = [NSPredicate predicateWithFormat:@"(self IN %@)", objectIDs];
+            fetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES]];
+            
+            NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
+            if (results && [results count] > 0) {
+                for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
+                    if ([result body] && [result streamBareJidStr] && [result bareJidStr]) {
+                        BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
+                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing];
+                        [messages addObject:message];
+                    }
                 }
             }
         }
