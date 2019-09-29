@@ -347,7 +347,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		// Create or update contact (if message with actual content)
 		
-		if (didCreateNewArchivedMessage && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody]))
+		if (didCreateNewArchivedMessage && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody] || [message isGroupChatMessageWithAffiliations]))
 		{
 			BOOL didCreateNewContact = NO;
 			
