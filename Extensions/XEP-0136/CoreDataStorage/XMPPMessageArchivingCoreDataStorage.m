@@ -24,6 +24,7 @@ NSString *const XMPP_MESSAGE_FROM_KEY = @"XMPP_MESSAGE_FROM";
 NSString *const XMPP_MESSAGE_TO_KEY = @"XMPP_MESSAGE_TO";
 NSString *const XMPP_MESSAGE_DATE_KEY = @"XMPP_MESSAGE_DATE";
 NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY = @"XMPP_MESSAGE_IS_OUTGOING";
+NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY = @"XMPP_MESSAGE_IS_SYSTEM";
 
 @interface XMPPMessageArchivingCoreDataStorage ()
 {
@@ -271,6 +272,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	NSString *identifier = [parsedMessageParameters objectForKey:XMPP_MESSAGE_IDENTIFIER_KEY];
     NSDate *date = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
     BOOL isOutgoing = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_OUTGOING_KEY] boolValue];
+    BOOL isSystem = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_SYSTEM_KEY] boolValue];
     NSString *from = [parsedMessageParameters objectForKey:XMPP_MESSAGE_FROM_KEY];
     NSString *to = [parsedMessageParameters objectForKey:XMPP_MESSAGE_TO_KEY];
     
@@ -309,6 +311,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			archivedMessage.timestamp = date;
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
+            archivedMessage.isSystem = isSystem;
 			didCreateNewArchivedMessage = YES;
 		}
 		
@@ -439,7 +442,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
                 for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
                     if ([result body] && [result streamBareJidStr] && [result bareJidStr]) {
                         BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
-                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing];
+                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing system:result.isSystem];
                         [messages addObject:message];
                     }
                 }
@@ -459,9 +462,15 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	NSString *identifier = (resultIdentifier != nil ? resultIdentifier : [xmppStream generateUUID]);
 	NSDate *delayedDeliveryDate = [message delayedDeliveryDate];
     NSDate *date = (delayedDeliveryDate != nil ? delayedDeliveryDate : [NSDate new]);
+    
     NSString *from;
     NSString *to;
-    if ([message isGroupChatMessage]) {
+    BOOL isSystem = NO;
+    if ([message isGroupChatMessageWithAffiliations]) {
+        from = [message groupChatMessageAffiliationsUser];
+        to = [[message from] bare];
+        isSystem = YES;
+    } else if ([message isGroupChatMessage]) {
         if ([[message from] resource]) {
             from = [[message from] resource];
             to = [[message from] bare];
@@ -485,6 +494,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	[parsedParameters setObject:identifier forKey:XMPP_MESSAGE_IDENTIFIER_KEY];
     [parsedParameters setObject:date forKey:XMPP_MESSAGE_DATE_KEY];
     [parsedParameters setObject:[NSNumber numberWithBool:isOutgoing] forKey:XMPP_MESSAGE_IS_OUTGOING_KEY];
+    [parsedParameters setObject:[NSNumber numberWithBool:isSystem] forKey:XMPP_MESSAGE_IS_SYSTEM_KEY];
     if (from) {
         [parsedParameters setObject:from forKey:XMPP_MESSAGE_FROM_KEY];
     }
@@ -680,7 +690,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		return;
 	}
 	
-	NSString *body = [[message elementForName:@"body"] stringValue];
 	BOOL isComposing = NO;
 	BOOL shouldDeleteComposingMessage = NO;
 	
@@ -709,7 +718,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		[self saveMessageToCoreData:message body:body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil];
+		[self saveMessageToCoreData:message body:message.body outgoing:outgoing shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil];
 	}];
 }
 
@@ -741,14 +750,20 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				}
 				
 				if (newMessage && ![newMessage isErrorMessage]) {
-					NSString *body = [[newMessage elementForName:@"body"] stringValue];
-					if ([newMessage isGroupChatMessageWithBody]) {
-						BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
-					} else if ([newMessage isChatMessageWithBody]) {
+                    if ([newMessage isGroupChatMessage]) {
+                        if ([newMessage isGroupChatMessageWithBody]) {
+                            BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
+                            [self saveMessageToCoreData:newMessage body:newMessage.body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
+                        } else if ([newMessage isGroupChatMessageWithAffiliations]) {
+                            [self saveMessageToCoreData:newMessage body:newMessage.groupChatMessageAffiliationsType outgoing:NO shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
+                        }
+                    } else if ([newMessage isChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] bare] isEqualToString:[[xmppStream myJID] bare]]);
-						[self saveMessageToCoreData:newMessage body:body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
-					}
+						[self saveMessageToCoreData:newMessage body:newMessage.body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
+                    } else {
+                        NSLog(@"\nNON CHAT MESSAGE %@\n", newMessage);
+                        NSLog(@"\n");
+                    }
 				}
 			}
 		}

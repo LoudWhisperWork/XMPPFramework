@@ -6,6 +6,7 @@
         <attribute name="identifier" attributeType="String" syncable="YES"/>
         <attribute name="mostRecentMessageBody" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="mostRecentMessageOutgoing" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" syncable="YES"/>
+        <attribute name="mostRecentMessageSystem" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="mostRecentMessageTimestamp" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
         <attribute name="streamBareJidStr" attributeType="String" indexed="YES" syncable="YES"/>
     </entity>
@@ -21,11 +22,12 @@
         <attribute name="outgoing" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
         <attribute name="previousArchiveIdentifier" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="streamBareJidStr" attributeType="String" indexed="YES" syncable="YES"/>
+        <attribute name="system" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="thread" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
     </entity>
     <elements>
-        <element name="XMPPMessageArchiving_Contact_CoreDataObject" positionX="160" positionY="192" width="128" height="148"/>
-        <element name="XMPPMessageArchiving_Message_CoreDataObject" positionX="160" positionY="192" width="128" height="238"/>
+        <element name="XMPPMessageArchiving_Contact_CoreDataObject" positionX="160" positionY="192" width="128" height="163"/>
+        <element name="XMPPMessageArchiving_Message_CoreDataObject" positionX="160" positionY="192" width="128" height="253"/>
     </elements>
 </model>

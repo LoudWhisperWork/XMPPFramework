@@ -28,6 +28,9 @@
 @property (nonatomic, strong) NSNumber * outgoing;    // Use isOutgoing
 @property (nonatomic, assign) BOOL isOutgoing;        // Convenience property
 
+@property (nonatomic, strong) NSNumber * system;    // Use isOutgoing
+@property (nonatomic, assign) BOOL isSystem;        // Convenience property
+
 @property (nonatomic, strong) NSNumber * composing;   // Use isComposing
 @property (nonatomic, assign) BOOL isComposing;       // Convenience property
 

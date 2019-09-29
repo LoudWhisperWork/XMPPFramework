@@ -10,6 +10,7 @@ extern NSString *const XMPP_MESSAGE_FROM_KEY;
 extern NSString *const XMPP_MESSAGE_TO_KEY;
 extern NSString *const XMPP_MESSAGE_DATE_KEY;
 extern NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY;
+extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
 
 @interface XMPPMessageArchivingCoreDataStorage : XMPPCoreDataStorage <XMPPMessageArchivingStorage>
 {

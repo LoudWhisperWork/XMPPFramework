@@ -12,6 +12,7 @@
 @property (nonatomic, strong) NSDate * mostRecentMessageTimestamp;
 @property (nonatomic, strong) NSString * mostRecentMessageBody;
 @property (nonatomic, strong) NSNumber * mostRecentMessageOutgoing;
+@property (nonatomic, strong) NSNumber * mostRecentMessageSystem;
 
 @property (nonatomic, strong) NSString * streamBareJidStr;
 

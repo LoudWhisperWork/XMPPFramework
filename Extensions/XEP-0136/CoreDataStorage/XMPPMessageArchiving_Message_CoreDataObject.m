@@ -21,6 +21,7 @@
 @dynamic body;
 @dynamic thread;
 @dynamic outgoing;
+@dynamic system;
 @dynamic composing;
 @dynamic timestamp;
 @dynamic streamBareJidStr;
@@ -143,6 +144,16 @@
 - (void)setIsOutgoing:(BOOL)flag
 {
 	self.outgoing = @(flag);
+}
+
+- (BOOL)isSystem
+{
+    return [self.system boolValue];
+}
+
+- (void)setIsSystem:(BOOL)flag
+{
+    self.system = @(flag);
 }
 
 - (BOOL)isComposing
