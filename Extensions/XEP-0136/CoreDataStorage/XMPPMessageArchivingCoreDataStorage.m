@@ -382,6 +382,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			contact.mostRecentMessageTimestamp = archivedMessage.timestamp;
 			contact.mostRecentMessageBody = archivedMessage.body;
 			contact.mostRecentMessageOutgoing = @(isOutgoing);
+			contact.mostRecentMessageSystem = @(isSystem);
 			
 			XMPPLogVerbose(@"New contact: %@", contact);
 			
@@ -755,14 +756,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
                             BOOL outgoing = ([[[newMessage from] resource] isEqualToString:[[xmppStream myJID] bare]]);
                             [self saveMessageToCoreData:newMessage body:newMessage.body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
                         } else if ([newMessage isGroupChatMessageWithAffiliations]) {
-                            [self saveMessageToCoreData:newMessage body:newMessage.groupChatMessageAffiliationsType outgoing:NO shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
+							BOOL outgoing = ([[newMessage groupChatMessageAffiliationsUser] isEqualToString:[[xmppStream myJID] bare]]);
+                            [self saveMessageToCoreData:newMessage body:newMessage.groupChatMessageAffiliationsType outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
                         }
                     } else if ([newMessage isChatMessageWithBody]) {
 						BOOL outgoing = ([[[newMessage from] bare] isEqualToString:[[xmppStream myJID] bare]]);
 						[self saveMessageToCoreData:newMessage body:newMessage.body outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier];
-                    } else {
-                        NSLog(@"\nNON CHAT MESSAGE %@\n", newMessage);
-                        NSLog(@"\n");
                     }
 				}
 			}
