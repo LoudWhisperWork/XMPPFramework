@@ -442,8 +442,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             if (results && [results count] > 0) {
                 for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
                     if ([result body] && [result streamBareJidStr] && [result bareJidStr]) {
-                        BOOL outgoing = ([result.bareJidStr isEqualToString:[[xmppStream myJID] bare]]);
-                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:outgoing system:result.isSystem];
+                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:result.isOutgoing system:result.isSystem];
                         [messages addObject:message];
                     }
                 }
