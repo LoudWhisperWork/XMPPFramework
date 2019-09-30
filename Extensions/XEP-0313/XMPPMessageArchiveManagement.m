@@ -106,33 +106,34 @@ static NSString *const QueryIdAttributeName = @"queryid";
 }
 
 - (void)handleMessageArchiveIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)trackerInfo {
+    XMPPElement *query = [[trackerInfo element] elementForName:@"query"];
+    NSString *queryId = [query attributeStringValueForName:@"queryid"];
+    
+    XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
+    XMPPJID *originalArchiveJID = [originalIq to];
+    XMPPJID *chatJID = originalArchiveJID;
+    
+    NSArray *fields = [[query elementForName:@"x"] elementsForName:@"field"];
+    for (NSXMLElement *field in fields) {
+        NSString *withAttribute = [[field attributeForName:@"var"] stringValue];
+        if (withAttribute && [withAttribute isEqualToString:@"with"]) {
+            chatJID = [XMPPJID jidWithString:[field stringValue]];
+        }
+    }
+    
 	if ([[iq type] isEqualToString:@"result"]) {
 		NSXMLElement *finElement = [iq elementForName:@"fin" xmlns:XMLNS_XMPP_MAM];
-        XMPPElement *query = [[trackerInfo element] elementForName:@"query"];
-        NSString *queryId = [query attributeStringValueForName:@"queryid"];
 		NSXMLElement *setElement = [finElement elementForName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
 		
-        XMPPResultSet *initialSet = [XMPPResultSet resultSetFromElement:[query elementForName:@"set"]];
         XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
         NSString *lastId = [resultSet elementForName:@"last"].stringValue;
-		
-		XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
-        XMPPJID *originalArchiveJID = [originalIq to];
-        XMPPJID *chatJID = originalArchiveJID;
-        
-        NSArray *fields = [[[[trackerInfo element] elementForName:@"query"] elementForName:@"x"] elementsForName:@"field"];
-        for (NSXMLElement *field in fields) {
-            NSString *withAttribute = [[field attributeForName:@"var"] stringValue];
-            if (withAttribute && [withAttribute isEqualToString:@"with"]) {
-                chatJID = [XMPPJID jidWithString:[field stringValue]];
-            }
-        }
         
         if (self.resultAutomaticPagingPageSize == 0 || [finElement attributeBoolValueForName:@"complete"] || !lastId) {
             if (queryId.length) {
                 [self.outstandingQueryIds removeObject:queryId];
             }
             
+            XMPPResultSet *initialSet = [XMPPResultSet resultSetFromElement:[query elementForName:@"set"]];
             [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:chatJID beforeMessageIdentifier:initialSet.before];
             return;
         }
@@ -145,7 +146,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
         
         [self retrieveMessageArchiveAt:originalArchiveJID withFormElement:originalFormElement resultSet:pagingResultSet queryId:newQueryId];
 	} else {
-		[multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:iq];
+        [multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:iq jid:chatJID];
 	}
 }
 

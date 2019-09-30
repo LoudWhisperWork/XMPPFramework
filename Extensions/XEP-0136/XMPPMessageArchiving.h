@@ -101,6 +101,7 @@
 **/
 - (void)archiveMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
 - (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages chatJID:(XMPPJID *)chatJID xmppStream:(XMPPStream *)xmppStream beforeMessageIdentifier:(NSString *)messageIdentifier;
+- (void)archiveAffiliationsMessageWithText:(NSString *)text chatJID:(XMPPJID *)chatJID senderJID:(XMPPJID *)senderJID outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream completion:(void (^)(XMPPMessage *))completion;
 
 - (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare;
 

@@ -686,7 +686,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 {
 	// Message should either have a body, or be a composing notification
 	
-	if ([message isErrorMessage]) {
+	if ([message isErrorMessage] || [message isGroupChatMessageWithAffiliations]) {
 		return;
 	}
 	
@@ -761,6 +761,23 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			}
 		}
 	}];
+}
+- (void)archiveAffiliationsMessageWithText:(NSString *)text chatJID:(XMPPJID *)chatJID senderJID:(XMPPJID *)senderJID outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream completion:(void (^)(XMPPMessage *))completion {
+    [self scheduleBlock:^{
+        XMPPElement *user = [XMPPElement elementWithName:@"user"];
+        [user addAttributeWithName:@"affiliation" stringValue:text];
+        [user setStringValue:[senderJID bare]];
+        
+        XMPPElement *x = [[XMPPElement alloc] initWithName:@"x" xmlns:@"urn:xmpp:muclight:0#affiliations"];
+        [x addChild:user];
+        
+        XMPPMessage *message = [XMPPMessage messageWithType:@"groupchat"];
+        [message addAttributeWithName:@"from" stringValue:[chatJID bare]];
+        [message addChild:x];
+        
+        [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType outgoing:outgoing shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil];
+        completion(message);
+    }];
 }
 
 - (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare
