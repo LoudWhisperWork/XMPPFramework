@@ -324,6 +324,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			didCreateNewArchivedMessage = YES;
 		}
         
+        NSDate *newArchiveDate = (date != nil ? date : (archivedMessage.timestamp != nil ? archivedMessage.timestamp : searchDate));
+        BOOL didChangeDateOfArchivedMessage = (newArchiveDate != archivedMessage.timestamp);
+        if (didChangeDateOfArchivedMessage) {
+            archivedMessage.timestamp = newArchiveDate;
+        }
+        
         if (archiveIdentifier && !previousArchiveIdentifier && messageIndex == 0) {
             [archivesIdentifiers setObject:archiveIdentifier forKey:XMPP_MESSAGE_PREVIOUS_ARCHIVE_IDENTIFIER_KEY];
         }
@@ -337,7 +343,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		}
 		
         archivedMessage.identifier = (identifier != nil ? identifier : archivedMessage.identifier);
-        archivedMessage.timestamp = (date != nil ? date : (archivedMessage.timestamp != nil ? archivedMessage.timestamp : searchDate));
 		archivedMessage.message = message;
 		archivedMessage.isComposing = isComposing;
         
@@ -368,7 +373,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		// Create or update contact (if message with actual content)
 		
-		if (didCreateNewArchivedMessage && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody] || [message isGroupChatMessageWithAffiliations]))
+		if ((didCreateNewArchivedMessage || didChangeDateOfArchivedMessage) && ([message isChatMessageWithBody] || [message isGroupChatMessageWithBody] || [message isGroupChatMessageWithAffiliations]))
 		{
 			BOOL didCreateNewContact = NO;
 			
@@ -397,7 +402,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				return archivesIdentifiers;
 			}
 			
-			contact.identifier = identifier;
+			contact.identifier = archivedMessage.identifier;
 			contact.streamBareJidStr = archivedMessage.streamBareJidStr;
 			contact.bareJid = archivedMessage.bareJid;
 			contact.mostRecentMessageTimestamp = archivedMessage.timestamp;
