@@ -759,7 +759,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSString *archiveIdentifier = [xmppStream generateUUID];
         NSString *previousArchiveIdentifier;
-        if (messageIdentifier) {
+        if (messageOriginalIdentifier) {
             XMPPMessageArchiving_Message_CoreDataObject *beforeMessage = [self archivedMessageInConversation:chatJID.bare messageOriginalIdentifier:messageOriginalIdentifier managedObjectContext:moc];
             previousArchiveIdentifier = [beforeMessage archiveIdentifier];
         }
