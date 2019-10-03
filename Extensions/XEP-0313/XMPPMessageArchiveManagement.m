@@ -134,7 +134,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
             }
             
             XMPPResultSet *initialSet = [XMPPResultSet resultSetFromElement:[query elementForName:@"set"]];
-            [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:chatJID beforeMessageIdentifier:initialSet.before];
+            [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet queryId:queryId jid:chatJID beforeMessageOriginalIdentifier:initialSet.before];
             return;
         }
 		

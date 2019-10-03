@@ -167,6 +167,35 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (XMPPMessageArchiving_Message_CoreDataObject *)archivedMessageInConversation:(NSString *)conversation
+													 messageOriginalIdentifier:(NSString *)messageOriginalIdentifier
+														  managedObjectContext:(NSManagedObjectContext *)moc
+{
+	XMPPMessageArchiving_Message_CoreDataObject *result = nil;
+	
+	NSEntityDescription *messageEntity = [self messageEntity:moc];
+	NSPredicate *predicate = [NSPredicate predicateWithFormat:@"originalIdentifier == %@ AND bareJidStr == %@", messageOriginalIdentifier, conversation];
+	NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO];
+	
+	NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+	fetchRequest.entity = messageEntity;
+	fetchRequest.predicate = predicate;
+	fetchRequest.sortDescriptors = @[sortDescriptor];
+	fetchRequest.fetchLimit = 1;
+	
+	NSError *error = nil;
+	NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
+	if (results == nil || error)
+	{
+		XMPPLogError(@"%@: %@ - Error executing fetchRequest: %@", THIS_FILE, THIS_METHOD, fetchRequest);
+	}
+	else
+	{
+		result = (XMPPMessageArchiving_Message_CoreDataObject *)[results lastObject];
+	}
+	return result;
+}
+
+- (XMPPMessageArchiving_Message_CoreDataObject *)archivedMessageInConversation:(NSString *)conversation
 															 messageIdentifier:(NSString *)messageIdentifier
 														  managedObjectContext:(NSManagedObjectContext *)moc
 {
@@ -725,13 +754,13 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}];
 }
 
-- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages chatJID:(XMPPJID *)chatJID xmppStream:(XMPPStream *)xmppStream beforeMessageIdentifier:(NSString *)messageIdentifier {
+- (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages chatJID:(XMPPJID *)chatJID xmppStream:(XMPPStream *)xmppStream beforeMessageOriginalIdentifier:(NSString *)messageOriginalIdentifier {
 	[self scheduleBlock:^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSString *archiveIdentifier = [xmppStream generateUUID];
         NSString *previousArchiveIdentifier;
         if (messageIdentifier) {
-            XMPPMessageArchiving_Message_CoreDataObject *beforeMessage = [self archivedMessageInConversation:chatJID.bare messageIdentifier:messageIdentifier managedObjectContext:moc];
+            XMPPMessageArchiving_Message_CoreDataObject *beforeMessage = [self archivedMessageInConversation:chatJID.bare messageOriginalIdentifier:messageOriginalIdentifier managedObjectContext:moc];
             previousArchiveIdentifier = [beforeMessage archiveIdentifier];
         }
         
