@@ -268,7 +268,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			archivedMessage.isOutgoing = isOutgoing;
             archivedMessage.isSystem = isSystem;
 			didCreateNewArchivedMessage = YES;
-		}
+        }
         
         NSDate *newArchiveDate = (date != nil ? date : (archivedMessage.timestamp != nil ? archivedMessage.timestamp : [NSDate new]));
         BOOL didChangeDateOfArchivedMessage = (newArchiveDate != archivedMessage.timestamp);
@@ -435,7 +435,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	NSString *identifier = [[message attributeForName:@"id"] stringValue];
 	NSString *originalIdentifier = [[message attributeForName:@"resultId"] stringValue];
 	if (!originalIdentifier) {
-		originalIdentifier = [message elementForName:@"stanza-id" xmlns:@"urn:xmpp:sid:0"];
+		originalIdentifier = [[[message elementForName:@"stanza-id" xmlns:@"urn:xmpp:sid:0"] attributeForName:@"id"] stringValue];
 	}
 	
 	NSDate *delayedDeliveryDate = [message delayedDeliveryDate];
@@ -509,9 +509,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 }
 
 - (BOOL)isMessageExists:(XMPPMessage *)message chatJID:(XMPPJID *)chatJID {
-	__block NSString *result = nil;
+	__block BOOL isMessageExists = NO;
 	dispatch_block_t block = ^{ @autoreleasepool {
 		NSString *identifier = [[message attributeForName:@"id"] stringValue];
+        NSManagedObjectContext *moc = [self managedObjectContext];
 		XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageInConversation:chatJID.bare messageIdentifier:identifier managedObjectContext:moc];
 		isMessageExists = (archivedMessage != nil);
 	}};
