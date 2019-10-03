@@ -19,6 +19,7 @@
         <attribute name="identifier" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="message" optional="YES" transient="YES" syncable="YES"/>
         <attribute name="messageStr" attributeType="String" syncable="YES"/>
+        <attribute name="originalIdentifier" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="outgoing" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
         <attribute name="previousArchiveIdentifier" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="streamBareJidStr" attributeType="String" indexed="YES" syncable="YES"/>
@@ -28,6 +29,6 @@
     </entity>
     <elements>
         <element name="XMPPMessageArchiving_Contact_CoreDataObject" positionX="160" positionY="192" width="128" height="163"/>
-        <element name="XMPPMessageArchiving_Message_CoreDataObject" positionX="160" positionY="192" width="128" height="253"/>
+        <element name="XMPPMessageArchiving_Message_CoreDataObject" positionX="160" positionY="192" width="128" height="268"/>
     </elements>
 </model>

@@ -6,6 +6,7 @@
 #import "XMPPMessageArchiving_Contact_CoreDataObject.h"
 
 extern NSString *const XMPP_MESSAGE_IDENTIFIER_KEY;
+extern NSString *const XMPP_MESSAGE_ORIGINAL_IDENTIFIER_KEY;
 extern NSString *const XMPP_MESSAGE_FROM_KEY;
 extern NSString *const XMPP_MESSAGE_TO_KEY;
 extern NSString *const XMPP_MESSAGE_DATE_KEY;
@@ -63,6 +64,8 @@ extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
 - (XMPPMessageArchiving_Contact_CoreDataObject *)contactWithBareJidStr:(NSString *)contactBareJidStr
                                                       streamBareJidStr:(NSString *)streamBareJidStr
                                                   managedObjectContext:(NSManagedObjectContext *)moc;
+
+- (BOOL)isMessageExists:(XMPPMessage *)message chatJID:(XMPPJID *)chatJID;
 
 - (void)clear;
 

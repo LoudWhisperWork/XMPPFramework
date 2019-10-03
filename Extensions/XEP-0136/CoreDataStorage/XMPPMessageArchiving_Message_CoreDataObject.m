@@ -13,7 +13,7 @@
 
 @implementation XMPPMessageArchiving_Message_CoreDataObject
 
-@dynamic identifier, archiveIdentifier, previousArchiveIdentifier;
+@dynamic identifier, originalIdentifier, archiveIdentifier, previousArchiveIdentifier;
 @dynamic message, primitiveMessage;
 @dynamic messageStr, primitiveMessageStr;
 @dynamic bareJid, primitiveBareJid;
