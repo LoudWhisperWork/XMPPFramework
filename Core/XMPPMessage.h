@@ -15,9 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XMPPMessageModel : NSObject
 
-- (instancetype)initWithIdentifier:(nonnull NSString *)identifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system;
+- (instancetype)initWithIdentifier:(nonnull NSString *)identifier originalIdentifier:(nullable NSString *)originalIdentifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system;
 
 @property (nonatomic, readonly, nonnull) NSString *identifier;
+@property (nonatomic, readonly, nullable) NSString *originalIdentifier;
 @property (nonatomic, readonly, nonnull) XMPPJID *sender;
 @property (nonatomic, readonly, nonnull) NSString *recipient;
 @property (nonatomic, readonly, nonnull) NSString *text;

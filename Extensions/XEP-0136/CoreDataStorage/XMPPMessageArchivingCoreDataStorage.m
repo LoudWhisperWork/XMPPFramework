@@ -415,8 +415,8 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
             if (results && [results count] > 0) {
                 for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
-                    if ([result body] && [result streamBareJidStr] && [result bareJidStr]) {
-                        XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:result.isOutgoing system:result.isSystem];
+                    if ([result identifier] && [result body] && [result streamBareJidStr] && [result bareJidStr]) {
+						XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier originalIdentifier:result.originalIdentifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:result.isOutgoing system:result.isSystem];
                         [messages addObject:message];
                     }
                 }
