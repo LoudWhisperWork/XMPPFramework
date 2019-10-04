@@ -7,8 +7,8 @@
 
 extern NSString *const XMPP_MESSAGE_IDENTIFIER_KEY;
 extern NSString *const XMPP_MESSAGE_ORIGINAL_IDENTIFIER_KEY;
-extern NSString *const XMPP_MESSAGE_FROM_KEY;
-extern NSString *const XMPP_MESSAGE_TO_KEY;
+extern NSString *const XMPP_MESSAGE_SENDER_KEY;
+extern NSString *const XMPP_MESSAGE_CONVERSATION_KEY;
 extern NSString *const XMPP_MESSAGE_DATE_KEY;
 extern NSString *const XMPP_MESSAGE_IS_OUTGOING_KEY;
 extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
@@ -53,7 +53,7 @@ extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
 
 - (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *, XMPPMessage *))completion;
 
-- (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message outgoing:(BOOL)outgoing xmppStream:(XMPPStream *)xmppStream;
+- (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message xmppStream:(XMPPStream *)xmppStream;
 
 - (XMPPMessageArchiving_Contact_CoreDataObject *)contactForMessage:(XMPPMessageArchiving_Message_CoreDataObject *)msg;
 

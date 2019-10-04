@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "XMPPStream.h"
 #import "XMPPElement.h"
 
 /**
@@ -6,7 +7,7 @@
  * It extends XMPPElement, which in turn extends NSXMLElement.
  * All <message> elements that go in and out of the
  * xmpp stream will automatically be converted to XMPPMessage objects.
- * 
+ *
  * This class exists to provide developers an easy way to add functionality to message processing.
  * Simply add your own category to XMPPMessage to extend it with your own custom methods.
 **/
@@ -70,6 +71,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL isMessageWithBody;
 
 @property (nonatomic, readonly, nullable) NSError *errorMessage;
+
+- (nullable NSString *)senderBareWithStream:(XMPPStream *)xmppStream;
+- (nullable NSString *)conversationBareWithStream:(XMPPStream *)xmppStream;
 
 @end
 NS_ASSUME_NONNULL_END

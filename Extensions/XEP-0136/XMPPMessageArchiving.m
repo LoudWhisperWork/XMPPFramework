@@ -167,7 +167,7 @@
 		}
 		
 		// Todo:
-		// 
+		//
 		//  - Send new pref to server (if changed)
 	}};
 	
@@ -184,13 +184,13 @@
 - (BOOL)shouldArchiveMessage:(XMPPMessage *)message outgoing:(BOOL)isOutgoing xmppStream:(XMPPStream *)xmppStream
 {
 	// XEP-0136 Section 2.9: Preferences precedence rules:
-	// 
+	//
 	// When determining archiving preferences for a given message, the following rules shall apply:
-	// 
+	//
 	// 1. 'save' value is taken from the <session> element that matches the conversation, if present,
 	//    else from the <item> element that matches the contact (see JID Matching), if present,
 	//    else from the default element.
-	// 
+	//
 	// 2. 'otr' and 'expire' value are taken from the <item> element that matches the contact, if present,
 	//    else from the default element.
 	
@@ -216,15 +216,15 @@
 	{
 		// Second priority - matching item element
 		//
-		// 
+		//
 		// XEP-0136 Section 10.1: JID Matching
-		// 
+		//
 		// The following rules apply:
-		// 
+		//
 		// 1. If the JID is of the form <localpart@domain.tld/resource>, only this particular JID matches.
 		// 2. If the JID is of the form <localpart@domain.tld>, any resource matches.
 		// 3. If the JID is of the form <domain.tld>, any node matches.
-		// 
+		//
 		// However, having these rules only would make impossible a match like "all collections having JID
 		// exactly equal to bare JID/domain JID". Therefore, when the 'exactmatch' attribute is set to "true" or
 		// "1" on the <list/>, <remove/> or <item/> element, a JID value such as "example.com" matches
@@ -310,12 +310,12 @@
 	
 	// The 'save' attribute specifies the user's default setting for Save Mode.
 	// The allowable values are:
-	// 
+	//
 	// - body    : the saving entity SHOULD save only <body/> elements.
 	// - false   : the saving entity MUST save nothing.
 	// - message : the saving entity SHOULD save the full XML content of each <message/> element.
 	// - stream  : the saving entity SHOULD save every byte that passes over the stream in either direction.
-	// 
+	//
 	// Note: We currently only support body, and treat values of 'message' or 'stream' the same as 'body'.
 	
 	NSString *save = [[match attributeStringValueForName:@"save"] lowercaseString];
@@ -346,7 +346,7 @@
 	}
 	
 	// Request archiving preferences from server
-	// 
+	//
 	// <iq type='get'>
 	//   <pref xmlns='urn:xmpp:archive'/>
 	// </iq>
@@ -372,7 +372,7 @@
 	else if ([type isEqualToString:@"set"])
 	{
 		// We receive the following type of IQ when we send a chat message within facebook from another device:
-		// 
+		//
 		// <iq from="chat.facebook.com" to="-121201407@chat.facebook.com/e49b026a_4BA226A73192D type="set">
 		//   <own-message xmlns="http://www.facebook.com/xmpp/messages" to="-123@chat.facebook.com" self="false">
 		//     <body>Hi Jilr</body>
@@ -396,7 +396,7 @@
 					
 					if ([self shouldArchiveMessage:message outgoing:YES xmppStream:sender])
 					{
-						[xmppMessageArchivingStorage archiveMessage:message outgoing:YES xmppStream:sender];
+						[xmppMessageArchivingStorage archiveMessage:message xmppStream:sender];
 					}
 				}
 			}
@@ -414,7 +414,7 @@
 	
 	if ([self shouldArchiveMessage:message outgoing:YES xmppStream:sender])
 	{
-		[xmppMessageArchivingStorage archiveMessage:message outgoing:YES xmppStream:sender];
+		[xmppMessageArchivingStorage archiveMessage:message xmppStream:sender];
 	}
 }
 
@@ -424,7 +424,7 @@
 	
 	if ([self shouldArchiveMessage:message outgoing:NO xmppStream:sender])
 	{
-		[xmppMessageArchivingStorage archiveMessage:message outgoing:NO xmppStream:sender];
+		[xmppMessageArchivingStorage archiveMessage:message xmppStream:sender];
 	}
 }
 
