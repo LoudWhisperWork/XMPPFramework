@@ -301,7 +301,7 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 	return NO;
 }
 
-- (double) delayInSeconds {
+- (double)delayInSeconds {
 	return 30.0;
 }
 
