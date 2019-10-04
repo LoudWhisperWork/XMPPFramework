@@ -11,7 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XMPPInbox : XMPPModule
+@interface XMPPInbox: XMPPModule
 
 - (void)discoverInboxMessages;
 
@@ -21,11 +21,11 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol XMPPInboxDelegate <NSObject>
 @optional
 
-- (void)xmppInbox:(XMPPInbox *)inbox didReceiveChatMessage:(XMPPMessage *)message
-NS_SWIFT_NAME(xmppInbox(_:didReceiveChatMessage:));
+- (void)xmppInbox:(XMPPInbox *)inbox didDiscoverInboxMessages:(XMPPMessage *)message
+NS_SWIFT_NAME(xmppInbox(_:didDiscoverInboxMessages:));
 
-- (void)xmppInbox:(XMPPInbox *)inbox didSendChatMessage:(XMPPMessage *)message
-NS_SWIFT_NAME(xmppInbox(_:didSendChatMessage:));
+- (void)xmppInbox:(XMPPInbox *)inbox didFailToDiscoverInboxMessages:(NSError *)error
+NS_SWIFT_NAME(xmppInbox(_:didFailToDiscoverInboxMessages:));
 
 @end
 
