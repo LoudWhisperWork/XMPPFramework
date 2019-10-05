@@ -203,8 +203,6 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
 
 - (void)handleDiscoverInboxMessagesQueryIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)info {
     dispatch_block_t block = ^{ @autoreleasepool {
-        NSString *streamBare = [[self.xmppStream myJID] bare];
-        
         NSMutableArray *messages = [NSMutableArray new];
         NSMutableDictionary *unreadMessagesCount = [NSMutableDictionary new];
         NSMutableDictionary *unreadMessageIdentifier = [NSMutableDictionary new];
@@ -212,25 +210,16 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
             for (NSXMLElement *result in self.reseavedResults) {
                 XMPPMessage *forwardedMessage = [result forwardedMessage];
                 if (forwardedMessage) {
-                    NSString *fromBare = [[forwardedMessage from] bare];
-                    NSString *toBare = [[forwardedMessage to] bare];
-                    
-                    NSString *chatBare;
-                    if (fromBare && [forwardedMessage isGroupChatMessage]) {
-                        chatBare = fromBare;
-                    } else if (fromBare && toBare && streamBare && [forwardedMessage isChatMessage]) {
-                        chatBare = (([fromBare isEqualToString:streamBare]) ? toBare : fromBare);
-                    }
-                    
-                    if (chatBare) {
+                    NSString *conversationBare = [forwardedMessage conversationBareWithStream:self.xmppStream];
+                    if (conversationBare) {
                         NSInteger unreadCount = [[[result attributeForName:XMPPInboxUnreadName] stringValue] integerValue];
-                        [unreadMessagesCount setObject:[NSNumber numberWithInteger:unreadCount] forKey:chatBare];
+                        [unreadMessagesCount setObject:[NSNumber numberWithInteger:unreadCount] forKey:conversationBare];
                         
                         NSString *messageIdentifier = [[forwardedMessage attributeForName:XMPPInboxIdentifierName] stringValue];
                         if (messageIdentifier) {
-                            [unreadMessageIdentifier setObject:messageIdentifier forKey:chatBare];
+                            [unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
                         } else {
-                            [unreadMessageIdentifier removeObjectForKey:chatBare];
+                            [unreadMessageIdentifier removeObjectForKey:conversationBare];
                         }
                     }
                     [messages addObject:forwardedMessage];
@@ -303,15 +292,23 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
         if (resultIdentifier && self.requestQueryIdentifier && [resultIdentifier isEqualToString:self.requestQueryIdentifier]) {
             [self.reseavedResults addObject:result];
         } else {
-            NSString *conversationBare = [message conversationBareWithStream:sender];
-            if (conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
+            NSString *streamBare = [[self.xmppStream myJID] bare];
+            NSString *senderBare = [message senderBareWithStream:self.xmppStream];
+            NSString *conversationBare = [message conversationBareWithStream:self.xmppStream];
+            BOOL outgoing = [streamBare isEqualToString:senderBare];
+            if (streamBare && senderBare && conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
                 if ([message hasDisplayedChatMarker]) {
-                    [self.unreadMessagesCount removeObjectForKey:conversationBare];
-                    [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
+                    if (outgoing) {
+                        [self.unreadMessagesCount removeObjectForKey:conversationBare];
+                        [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
+                    }
                 } else {
                     NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
                     NSInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] integerValue];
-                    if (messageIdentifier) {
+                    if (outgoing && messageIdentifier && unreadMessagesCount > 0) {
+                        [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
+                        [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
+                    } else if (!outgoing && messageIdentifier) {
                         [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
                         [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
                     }

@@ -402,7 +402,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset deleteIfOverflow:(BOOL)deleteIfOverflow xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *, XMPPMessage *))completion {
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset deleteIfOverflow:(BOOL)deleteIfOverflow xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion {
     dispatch_block_t block = ^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
@@ -434,7 +434,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		}
         
         NSMutableArray<XMPPMessageModel *> *messages = [NSMutableArray new];
-        XMPPMessage *lastMessage;
         if (objectIDs && [objectIDs count] > 0) {
             NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
             fetchRequest.entity = messageEntity;
@@ -449,10 +448,9 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
                         [messages addObject:message];
                     }
                 }
-                lastMessage = [[results lastObject] message];
             }
         }
-        completion(messages, lastMessage);
+        completion(messages);
     };
     
     if (dispatch_get_specific(storageQueueTag))

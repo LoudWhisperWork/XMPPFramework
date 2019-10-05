@@ -52,7 +52,7 @@ extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
 - (NSEntityDescription *)messageEntity:(NSManagedObjectContext *)moc;
 - (NSEntityDescription *)contactEntity:(NSManagedObjectContext *)moc;
 
-- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset deleteIfOverflow:(BOOL)deleteIfOverflow xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *, XMPPMessage *))completion;
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset deleteIfOverflow:(BOOL)deleteIfOverflow xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *))completion;
 
 - (NSDictionary *)parsedMessageParametersFromMessage:(XMPPMessage *)message xmppStream:(XMPPStream *)xmppStream;
 
