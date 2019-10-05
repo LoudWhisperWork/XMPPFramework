@@ -32,7 +32,7 @@ NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY = @"XMPP_MESSAGE_IS_SYSTEM";
 
 @interface XMPPMessageArchivingCoreDataStorage ()
 {
-	NSUInteger *overflowCount;
+	NSUInteger overflowCount;
 	NSString *messageEntityName;
 	NSString *contactEntityName;
     NSArray<NSString *> *relevantContentXPaths;
@@ -314,10 +314,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		if (!archivedMessage.archiveIdentifier) {
 			archivedMessage.archiveIdentifier = archiveIdentifier;
 		}
-		
-		if (!archivedMessage.previousArchiveIdentifier && archivedMessage.archiveIdentifier != previousArchiveIdentifier) {
-            archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
-		}
+		archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
 		
         archivedMessage.identifier = (identifier != nil ? identifier : archivedMessage.identifier);
 		archivedMessage.originalIdentifier = (originalIdentifier != nil ? originalIdentifier : archivedMessage.originalIdentifier);
@@ -429,7 +426,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
 		if (deleteIfOverflow && [objectIDsResults count] > overflowCount) {
 			NSUInteger countToDelete = [objectIDsResults count] - overflowCount;
-			if (countToDelete > 0) {
+			if (countToDelete > 0 && countToDelete > (overflowCount / 2)) {
 				NSArray *messagesIDsToDelete = [objectIDsResults subarrayWithRange:NSMakeRange([objectIDsResults count] - countToDelete, countToDelete)];
 				NSBatchDeleteRequest *deleteRequest = [[NSBatchDeleteRequest alloc] initWithObjectIDs:messagesIDsToDelete];
 				[moc executeRequest:deleteRequest error:nil];
