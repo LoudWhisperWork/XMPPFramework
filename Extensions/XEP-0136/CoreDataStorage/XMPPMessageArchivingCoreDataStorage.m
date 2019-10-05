@@ -578,7 +578,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	else
 	{
-		return results;
+		return [results firstObject];
 	}
 }
 
