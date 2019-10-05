@@ -23,6 +23,7 @@
 @property (nonatomic, strong) NSString * archiveIdentifier;
 @property (nonatomic, strong) NSString * previousArchiveIdentifier;
 
+@property (nonatomic, strong) NSNumber *order;
 @property (nonatomic, strong) NSString * body;
 @property (nonatomic, strong) NSString * thread;
 

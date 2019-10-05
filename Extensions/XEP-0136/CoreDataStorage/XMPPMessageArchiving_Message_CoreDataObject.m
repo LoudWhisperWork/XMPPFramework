@@ -18,6 +18,7 @@
 @dynamic messageStr, primitiveMessageStr;
 @dynamic bareJid, primitiveBareJid;
 @dynamic bareJidStr, primitiveBareJidStr;
+@dynamic order;
 @dynamic body;
 @dynamic thread;
 @dynamic outgoing;
