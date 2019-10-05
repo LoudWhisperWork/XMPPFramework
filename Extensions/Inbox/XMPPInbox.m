@@ -203,15 +203,16 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
 
 - (void)handleDiscoverInboxMessagesQueryIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)info {
     dispatch_block_t block = ^{ @autoreleasepool {
+        NSString *streamBare = [[self.xmppStream myJID] bare];
         NSMutableArray *messages = [NSMutableArray new];
         NSMutableDictionary *unreadMessagesCount = [NSMutableDictionary new];
         NSMutableDictionary *unreadMessageIdentifier = [NSMutableDictionary new];
-        if (self.reseavedResults && [self.reseavedResults count] > 0) {
+        if (streamBare && self.reseavedResults && [self.reseavedResults count] > 0) {
             for (NSXMLElement *result in self.reseavedResults) {
                 XMPPMessage *forwardedMessage = [result forwardedMessage];
                 if (forwardedMessage) {
                     NSString *conversationBare = [forwardedMessage conversationBareWithStream:self.xmppStream];
-                    if (conversationBare) {
+                    if (conversationBare && ![conversationBare isEqualToString:streamBare]) {
                         NSInteger unreadCount = [[[result attributeForName:XMPPInboxUnreadName] stringValue] integerValue];
                         [unreadMessagesCount setObject:[NSNumber numberWithInteger:unreadCount] forKey:conversationBare];
                         
