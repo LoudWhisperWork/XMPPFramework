@@ -169,6 +169,22 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
     return result;
 }
 
+- (NSInteger)totalUnreadMessagesCount {
+    __block NSInteger result = 0;
+    dispatch_block_t block = ^{ @autoreleasepool {
+        for (NSNumber *value in self.unreadMessagesCount.allValues) {
+            result += [value integerValue];
+        }
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag)) {
+        block();
+    } else {
+        dispatch_sync(moduleQueue, block);
+    }
+    return result;
+}
+
 - (NSString *)unreadMessageIdentifierFromWhichCountingStartsForChatJID:(XMPPJID *)chatJID {
     __block NSString *result = nil;
     dispatch_block_t block = ^{ @autoreleasepool {
