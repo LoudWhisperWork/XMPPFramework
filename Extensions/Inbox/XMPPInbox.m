@@ -257,19 +257,11 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
     dispatch_block_t block = ^{ @autoreleasepool {
         BOOL discoveryRequestInProgress = (self.requestQueryIdentifier != nil);
         NSString *conversationBare = [message conversationBareWithStream:sender];
-        if (conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
+        if (conversationBare && [message hasDisplayedChatMarker]) {
             if ([message hasDisplayedChatMarker]) {
                 [self.unreadMessagesCount removeObjectForKey:conversationBare];
                 [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
                 [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
-            } else {
-                NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
-                NSInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] integerValue];
-                if (messageIdentifier && unreadMessagesCount > 0) {
-                    [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
-                    [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
-                    [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
-                }
             }
             
             if (discoveryRequestInProgress) {
@@ -293,27 +285,20 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
         if (resultIdentifier && self.requestQueryIdentifier && [resultIdentifier isEqualToString:self.requestQueryIdentifier]) {
             [self.reseavedResults addObject:result];
         } else {
+            XMPPMessage *messageToProcess = message;
+            if ([message isMessageCarbon]) {
+                messageToProcess = [message messageCarbonForwardedMessage];
+            }
+            
             NSString *streamBare = [[self.xmppStream myJID] bare];
-            NSString *senderBare = [message senderBareWithStream:self.xmppStream];
-            NSString *conversationBare = [message conversationBareWithStream:self.xmppStream];
+            NSString *senderBare = [messageToProcess senderBareWithStream:self.xmppStream];
+            NSString *conversationBare = [messageToProcess conversationBareWithStream:self.xmppStream];
             BOOL outgoing = [streamBare isEqualToString:senderBare];
-            if (streamBare && senderBare && conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
-                if ([message hasDisplayedChatMarker]) {
+            if (streamBare && senderBare && conversationBare && [messageToProcess hasDisplayedChatMarker]) {
+                if ([messageToProcess hasDisplayedChatMarker]) {
                     if (outgoing) {
                         [self.unreadMessagesCount removeObjectForKey:conversationBare];
                         [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
-                        [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
-                    }
-                } else {
-                    NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
-                    NSInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] integerValue];
-                    if (outgoing && messageIdentifier && unreadMessagesCount > 0) {
-                        [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
-                        [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
-                        [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
-                    } else if (!outgoing && messageIdentifier) {
-                        [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
-                        [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
                         [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
                     }
                 }
