@@ -264,7 +264,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     NSString *sender = [parsedMessageParameters objectForKey:XMPP_MESSAGE_SENDER_KEY];
     NSString *conversation = [parsedMessageParameters objectForKey:XMPP_MESSAGE_CONVERSATION_KEY];
     
-    BOOL dataIsCorrect = (sender && [sender isKindOfClass:[NSString class]] && conversation && [conversation isKindOfClass:[NSString class]]);
+    BOOL dataIsCorrect = (identifier && [identifier isKindOfClass:[NSString class]] && sender && [sender isKindOfClass:[NSString class]] && conversation && [conversation isKindOfClass:[NSString class]]);
     if (!dataIsCorrect) {
         return archivesIdentifiers;
     }
@@ -699,7 +699,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 {
 	[self scheduleBlock:^{
 		for (XMPPMessage *message in messages) {
-			if ([message isErrorMessage] || [message isGroupChatMessageWithAffiliations]) {
+			if ([message isErrorMessage]) {
 				continue;
 			}
 			
