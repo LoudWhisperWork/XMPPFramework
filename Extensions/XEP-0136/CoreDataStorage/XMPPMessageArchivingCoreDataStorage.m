@@ -353,27 +353,17 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		{
 			BOOL didCreateNewContact = NO;
 			
-			NSArray<XMPPMessageArchiving_Contact_CoreDataObject *> *contacts = [self contactsWithBareJidStr:archivedMessage.bareJid.bare streamBareJidStr:nil managedObjectContext:moc];
-			XMPPMessageArchiving_Contact_CoreDataObject *contact = [contacts lastObject];
+			XMPPMessageArchiving_Contact_CoreDataObject *contact = [self contactWithIdentifier:archivedMessage.identifier managedObjectContext:moc];
 			XMPPLogVerbose(@"Previous contact: %@", contact);
-			
-			if ([contacts count] > 1) {
-				NSArray *contactsToDelete = [contacts subarrayWithRange:NSMakeRange(0, contacts.count - 1)];
-				for (XMPPMessageArchiving_Contact_CoreDataObject *contactToDelete in contactsToDelete) {
-					[self willDeleteMessage:contactToDelete];
-					[moc deleteObject:contactToDelete];
-				}
-			}
 			
 			if (contact == nil)
 			{
 				contact = (XMPPMessageArchiving_Contact_CoreDataObject *)
 				[[NSManagedObject alloc] initWithEntity:[self contactEntity:moc]
 						 insertIntoManagedObjectContext:nil];
-				
 				didCreateNewContact = YES;
 			}
-			else if ([contact.mostRecentMessageTimestamp timeIntervalSince1970] > [archivedMessage.timestamp timeIntervalSince1970])
+			else if ([contact.mostRecentMessageTimestamp timeIntervalSince1970] >= [archivedMessage.timestamp timeIntervalSince1970])
 			{
 				return archivesIdentifiers;
 			}
@@ -558,7 +548,29 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	
 	NSError *error = nil;
 	NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
+	if (results == nil)
+	{
+		XMPPLogError(@"%@: %@ - Fetch request error: %@", THIS_FILE, THIS_METHOD, error);
+		return nil;
+	}
+	else
+	{
+		return results;
+	}
+}
+
+- (XMPPMessageArchiving_Contact_CoreDataObject *)contactWithIdentifier:(NSString *)identifier
+												  managedObjectContext:(NSManagedObjectContext *)moc
+{
+	NSEntityDescription *entity = [self contactEntity:moc];
+	NSPredicate *predicate = [NSPredicate predicateWithFormat:@"identifier == %@", identifier];
 	
+	NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+	[fetchRequest setEntity:entity];
+	[fetchRequest setPredicate:predicate];
+	
+	NSError *error = nil;
+	NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
 	if (results == nil)
 	{
 		XMPPLogError(@"%@: %@ - Fetch request error: %@", THIS_FILE, THIS_METHOD, error);
