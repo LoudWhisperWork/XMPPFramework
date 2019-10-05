@@ -695,10 +695,21 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	return [super configureWithParent:aParent queue:queue];
 }
 
+- (void)archiveMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream
+{
+	[self scheduleBlock:^{
+		for (XMPPMessage *message in messages) {
+			if ([message isErrorMessage] || [message isGroupChatMessageWithAffiliations]) {
+				continue;
+			}
+			
+			NSDictionary *archivesIdentifiers = [self saveMessageToCoreData:message body:message.body shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		}
+	}];
+}
+
 - (void)archiveMessage:(XMPPMessage *)message xmppStream:(XMPPStream *)xmppStream
 {
-	// Message should either have a body, or be a composing notification
-	
 	if ([message isErrorMessage] || [message isGroupChatMessageWithAffiliations]) {
 		return;
 	}
