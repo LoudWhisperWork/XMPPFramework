@@ -32,6 +32,7 @@ NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY = @"XMPP_MESSAGE_IS_SYSTEM";
 
 @interface XMPPMessageArchivingCoreDataStorage ()
 {
+	NSUInteger *overflowCount;
 	NSString *messageEntityName;
 	NSString *contactEntityName;
     NSArray<NSString *> *relevantContentXPaths;
@@ -70,6 +71,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 {
 	[super commonInit];
 	
+	overflowCount = 1000;
 	messageEntityName = @"XMPPMessageArchiving_Message_CoreDataObject";
 	contactEntityName = @"XMPPMessageArchiving_Contact_CoreDataObject";
     
@@ -353,7 +355,8 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		{
 			BOOL didCreateNewContact = NO;
 			
-			XMPPMessageArchiving_Contact_CoreDataObject *contact = [self contactWithIdentifier:archivedMessage.identifier managedObjectContext:moc];
+			NSArray<XMPPMessageArchiving_Contact_CoreDataObject *> *contacts = [self contactsWithBareJidStr:archivedMessage.bareJid.bare streamBareJidStr:nil managedObjectContext:moc];
+			XMPPMessageArchiving_Contact_CoreDataObject *contact = [contacts lastObject];
 			XMPPLogVerbose(@"Previous contact: %@", contact);
 			
 			if (contact == nil)
@@ -402,7 +405,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *, XMPPMessage *))completion {
+- (void)fetchMessagesInChatWithJID:(XMPPJID *)jid fetchLimit:(NSInteger)fetchLimit fetchOffset:(NSInteger)fetchOffset deleteIfOverflow:(BOOL)deleteIfOverflow xmppStream:(XMPPStream *)xmppStream completion:(void (^)(NSArray<XMPPMessageModel *> *, XMPPMessage *))completion {
     dispatch_block_t block = ^{
         NSManagedObjectContext *moc = [self managedObjectContext];
         NSEntityDescription *messageEntity = [self messageEntity:moc];
@@ -423,6 +426,15 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
                 objectIDs = [objectIDsResults subarrayWithRange:NSMakeRange(fetchOffset, ([objectIDsResults count] - fetchOffset))];
             }
         }
+		
+		if (deleteIfOverflow && [objectIDsResults count] > overflowCount) {
+			NSUInteger countToDelete = [objectIDsResults count] - overflowCount;
+			if (countToDelete > 0) {
+				NSArray *messagesIDsToDelete = [objectIDsResults subarrayWithRange:NSMakeRange([objectIDsResults count] - countToDelete, countToDelete)];
+				NSBatchDeleteRequest *deleteRequest = [[NSBatchDeleteRequest alloc] initWithObjectIDs:messagesIDsToDelete];
+				[moc executeRequest:deleteRequest error:nil];
+			}
+		}
         
         NSMutableArray<XMPPMessageModel *> *messages = [NSMutableArray new];
         XMPPMessage *lastMessage;
@@ -559,29 +571,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 }
 
-- (XMPPMessageArchiving_Contact_CoreDataObject *)contactWithIdentifier:(NSString *)identifier
-												  managedObjectContext:(NSManagedObjectContext *)moc
-{
-	NSEntityDescription *entity = [self contactEntity:moc];
-	NSPredicate *predicate = [NSPredicate predicateWithFormat:@"identifier == %@", identifier];
-	
-	NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
-	[fetchRequest setEntity:entity];
-	[fetchRequest setPredicate:predicate];
-	
-	NSError *error = nil;
-	NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
-	if (results == nil)
-	{
-		XMPPLogError(@"%@: %@ - Fetch request error: %@", THIS_FILE, THIS_METHOD, error);
-		return nil;
-	}
-	else
-	{
-		return [results firstObject];
-	}
-}
-
 - (void)clear
 {
 	dispatch_block_t block = ^{ @autoreleasepool {
@@ -595,6 +584,33 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		dispatch_sync(storageQueue, block);
 }
 
+- (NSUInteger)overflowCount
+{
+	__block NSUInteger result = 0;
+	
+	dispatch_block_t block = ^{
+		result = self->overflowCount;
+	};
+	
+	if (dispatch_get_specific(storageQueueTag))
+		block();
+	else
+		dispatch_sync(storageQueue, block);
+	
+	return result;
+}
+
+- (void)setOverflowCount:(NSUInteger)overflowCount
+{
+	dispatch_block_t block = ^{
+		self->overflowCount = overflowCount;
+	};
+	
+	if (dispatch_get_specific(storageQueueTag))
+		block();
+	else
+		dispatch_async(storageQueue, block);
+}
 
 - (NSString *)messageEntityName
 {
