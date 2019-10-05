@@ -155,10 +155,10 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
     }
 }
 
-- (NSUInteger)unreadMessagesCountForChatJID:(XMPPJID *)chatJID {
-    __block NSUInteger result = 0;
+- (NSInteger)unreadMessagesCountForChatJID:(XMPPJID *)chatJID {
+    __block NSInteger result = 0;
     dispatch_block_t block = ^{ @autoreleasepool {
-        result = [[self.unreadMessagesCount objectForKey:[chatJID bare]] unsignedIntegerValue];
+        result = [[self.unreadMessagesCount objectForKey:[chatJID bare]] integerValue];
     }};
     
     if (dispatch_get_specific(moduleQueueTag)) {
@@ -207,8 +207,8 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
                     }
                     
                     if (chatBare) {
-                        NSUInteger unreadCount = [[[result attributeForName:XMPPInboxUnreadName] stringValue] integerValue];
-                        [unreadMessagesCount setObject:[NSNumber numberWithUnsignedInteger:unreadCount] forKey:chatBare];
+                        NSInteger unreadCount = [[[result attributeForName:XMPPInboxUnreadName] stringValue] integerValue];
+                        [unreadMessagesCount setObject:[NSNumber numberWithInteger:unreadCount] forKey:chatBare];
                         
                         NSString *messageIdentifier = [[forwardedMessage attributeForName:XMPPInboxIdentifierName] stringValue];
                         if (messageIdentifier) {
@@ -249,35 +249,8 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
 #pragma mark - XMPPStreamDelegate
 
 - (void)xmppStream:(XMPPStream *)sender didSendMessage:(XMPPMessage *)message {
-    BOOL discoveryRequestInProgress = (self.requestQueryIdentifier != nil);
-    NSString *conversationBare = [message conversationBareWithStream:sender];
-    if (conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
-        if ([message hasDisplayedChatMarker]) {
-            [self.unreadMessagesCount removeObjectForKey:conversationBare];
-            [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
-        } else {
-            NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
-            NSUInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] unsignedIntegerValue];
-            if (messageIdentifier && unreadMessagesCount > 0) {
-                [self.unreadMessagesCount setObject:[NSNumber numberWithUnsignedInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
-                [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
-            }
-        }
-        [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
-        
-        if (discoveryRequestInProgress) {
-            [self discoverInboxMessages];
-        }
-    }
-}
-
-- (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message {
-    BOOL discoveryRequestInProgress = (self.requestQueryIdentifier != nil);
-    NSXMLElement *result = [message elementForName:XMPPInboxResultQueryName xmlns:XMPPInboxXMLNS];
-    NSString *resultIdentifier = [[result attributeForName:XMPPInboxQueryIdentifierName] stringValue];
-    if (resultIdentifier && self.requestQueryIdentifier && [resultIdentifier isEqualToString:self.requestQueryIdentifier]) {
-        [self.reseavedResults addObject:result];
-    } else {
+    dispatch_block_t block = ^{ @autoreleasepool {
+        BOOL discoveryRequestInProgress = (self.requestQueryIdentifier != nil);
         NSString *conversationBare = [message conversationBareWithStream:sender];
         if (conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
             if ([message hasDisplayedChatMarker]) {
@@ -285,9 +258,9 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
                 [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
             } else {
                 NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
-                NSUInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] unsignedIntegerValue];
-                if (messageIdentifier) {
-                    [self.unreadMessagesCount setObject:[NSNumber numberWithUnsignedInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
+                NSInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] integerValue];
+                if (messageIdentifier && unreadMessagesCount > 0) {
+                    [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
                     [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
                 }
             }
@@ -297,12 +270,66 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
                 [self discoverInboxMessages];
             }
         }
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag)) {
+        block();
+    } else {
+        dispatch_async(moduleQueue, block);
+    }
+}
+
+- (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message {
+    dispatch_block_t block = ^{ @autoreleasepool {
+        BOOL discoveryRequestInProgress = (self.requestQueryIdentifier != nil);
+        NSXMLElement *result = [message elementForName:XMPPInboxResultQueryName xmlns:XMPPInboxXMLNS];
+        NSString *resultIdentifier = [[result attributeForName:XMPPInboxQueryIdentifierName] stringValue];
+        if (resultIdentifier && self.requestQueryIdentifier && [resultIdentifier isEqualToString:self.requestQueryIdentifier]) {
+            [self.reseavedResults addObject:result];
+        } else {
+            NSString *conversationBare = [message conversationBareWithStream:sender];
+            if (conversationBare && ([message hasDisplayedChatMarker] || [message isGroupChatMessageWithAffiliations] || [message isGroupChatMessageWithBody] || [message isChatMessageWithBody])) {
+                if ([message hasDisplayedChatMarker]) {
+                    [self.unreadMessagesCount removeObjectForKey:conversationBare];
+                    [self.unreadMessageIdentifier removeObjectForKey:conversationBare];
+                } else {
+                    NSString *messageIdentifier = [[message attributeForName:XMPPInboxIdentifierName] stringValue];
+                    NSInteger unreadMessagesCount = [[self.unreadMessagesCount objectForKey:conversationBare] integerValue];
+                    if (messageIdentifier) {
+                        [self.unreadMessagesCount setObject:[NSNumber numberWithInteger:(unreadMessagesCount + 1)] forKey:conversationBare];
+                        [self.unreadMessageIdentifier setObject:messageIdentifier forKey:conversationBare];
+                    }
+                }
+                [self.multicastDelegate xmppInbox:self didUpdateInboxMessagesForChatWithJabberIdentifier:[XMPPJID jidWithString:conversationBare]];
+                
+                if (discoveryRequestInProgress) {
+                    [self discoverInboxMessages];
+                }
+            }
+        }
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag)) {
+        block();
+    } else {
+        dispatch_async(moduleQueue, block);
     }
 }
 
 - (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq {
+    __block NSString *requestQueryIdentifier = nil;
+    dispatch_block_t block = ^{ @autoreleasepool {
+        requestQueryIdentifier = self.requestQueryIdentifier;
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag)) {
+        block();
+    } else {
+        dispatch_sync(moduleQueue, block);
+    }
+    
     NSString *iqIdentifier = [iq elementID];
-    if (iqIdentifier && self.requestQueryIdentifier && [iqIdentifier isEqualToString:self.requestQueryIdentifier]) {
+    if (iqIdentifier && requestQueryIdentifier && [iqIdentifier isEqualToString:requestQueryIdentifier]) {
         return [self.xmppIDTracker invokeForID:iqIdentifier withObject:iq];
     }
     return NO;

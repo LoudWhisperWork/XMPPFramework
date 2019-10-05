@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XMPPInbox: XMPPModule
 
 - (void)discoverInboxMessages;
-- (NSUInteger)unreadMessagesCountForChatJID:(XMPPJID *)chatJID;
+- (NSInteger)unreadMessagesCountForChatJID:(XMPPJID *)chatJID;
 - (nullable NSString *)unreadMessageIdentifierFromWhichCountingStartsForChatJID:(XMPPJID *)chatJID;
 
 @end
