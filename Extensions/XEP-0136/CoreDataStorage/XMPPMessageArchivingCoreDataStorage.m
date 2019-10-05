@@ -392,7 +392,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
         NSFetchRequest *objectIDsFetchRequest = [[NSFetchRequest alloc] init];
         objectIDsFetchRequest.entity = messageEntity;
         objectIDsFetchRequest.predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
-        objectIDsFetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO], [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:NO]];
+        objectIDsFetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO], [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:YES]];
         objectIDsFetchRequest.resultType = NSManagedObjectIDResultType;
         
         NSError *error = nil;
@@ -420,7 +420,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
             fetchRequest.entity = messageEntity;
             fetchRequest.predicate = [NSPredicate predicateWithFormat:@"(self IN %@)", objectIDs];
-            fetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES]];
+            fetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES], [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:NO]];
             
             NSArray *results = [moc executeFetchRequest:fetchRequest error:&error];
             if (results && [results count] > 0) {
@@ -448,9 +448,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		originalIdentifier = [[[message elementForName:@"stanza-id" xmlns:@"urn:xmpp:sid:0"] attributeForName:@"id"] stringValue];
 	}
 	
-	NSDate *delayedDeliveryDate = [message delayedDeliveryDate];
-    NSDate *date = delayedDeliveryDate;
-    
+    NSDate *date = [message delayedDeliveryDate];
     NSString *streamBare = [[xmppStream myJID] bare];
     NSString *senderBare = [message senderBareWithStream:xmppStream];
     NSString *conversationBare = [message conversationBareWithStream:xmppStream];
