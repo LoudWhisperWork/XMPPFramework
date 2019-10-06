@@ -19,7 +19,7 @@
         <attribute name="identifier" attributeType="String" syncable="YES"/>
         <attribute name="message" optional="YES" transient="YES" syncable="YES"/>
         <attribute name="messageStr" attributeType="String" syncable="YES"/>
-        <attribute name="order" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="NO" syncable="YES"/>
+        <attribute name="order" optional="YES" attributeType="Integer 64" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="originalIdentifier" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="outgoing" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
         <attribute name="previousArchiveIdentifier" optional="YES" attributeType="String" syncable="YES"/>

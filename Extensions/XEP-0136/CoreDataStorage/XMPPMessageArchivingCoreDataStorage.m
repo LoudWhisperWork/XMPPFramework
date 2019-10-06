@@ -300,13 +300,17 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		if (!archivedMessage.archiveIdentifier) {
 			archivedMessage.archiveIdentifier = archiveIdentifier;
 		}
-		archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
+        if (previousArchiveIdentifier) {
+            archivedMessage.previousArchiveIdentifier = previousArchiveIdentifier;
+        }
+        if (!archivedMessage.order) {
+            archivedMessage.order = [NSNumber numberWithInteger:messageIndex];
+        }
 		
         archivedMessage.identifier = (identifier != nil ? identifier : archivedMessage.identifier);
 		archivedMessage.originalIdentifier = (originalIdentifier != nil ? originalIdentifier : archivedMessage.originalIdentifier);
 		archivedMessage.message = message;
 		archivedMessage.isComposing = isComposing;
-		archivedMessage.order = [NSNumber numberWithInteger:messageIndex];
 		
 		updatedPreviousArchiveIdentifier = archivedMessage.archiveIdentifier;
 		
@@ -392,7 +396,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
         NSFetchRequest *objectIDsFetchRequest = [[NSFetchRequest alloc] init];
         objectIDsFetchRequest.entity = messageEntity;
         objectIDsFetchRequest.predicate = [NSPredicate predicateWithFormat:@"bareJidStr == %@", jid.bare];
-        objectIDsFetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO], [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:YES]];
+        objectIDsFetchRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO], [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:NO]];
         objectIDsFetchRequest.resultType = NSManagedObjectIDResultType;
         
         NSError *error = nil;
