@@ -282,7 +282,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		if (archivedMessage == nil)
 		{
 			archivedMessage = (XMPPMessageArchiving_Message_CoreDataObject *)[[NSManagedObject alloc] initWithEntity:[self messageEntity:moc] insertIntoManagedObjectContext:nil];
-			archivedMessage.body = body;
 			archivedMessage.bareJid = [XMPPJID jidWithString:conversation];
 			archivedMessage.streamBareJidStr = sender;
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
@@ -309,6 +308,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		
         archivedMessage.identifier = (identifier != nil ? identifier : archivedMessage.identifier);
 		archivedMessage.originalIdentifier = (originalIdentifier != nil ? originalIdentifier : archivedMessage.originalIdentifier);
+		archivedMessage.body = body;
 		archivedMessage.message = message;
 		archivedMessage.isComposing = isComposing;
 		
@@ -798,6 +798,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		}
 	}];
 }
+
 - (void)archiveAffiliationsMessageWithText:(NSString *)text chatJID:(XMPPJID *)chatJID senderJID:(XMPPJID *)senderJID xmppStream:(XMPPStream *)xmppStream completion:(void (^)(XMPPMessage *))completion {
     [self scheduleBlock:^{
         XMPPElement *user = [XMPPElement elementWithName:@"user"];
