@@ -103,7 +103,6 @@
 - (void)archiveMessages:(NSArray<XMPPMessage *> *)messages xmppStream:(XMPPStream *)xmppStream;
 - (void)archiveMessage:(XMPPMessage *)message xmppStream:(XMPPStream *)xmppStream;
 - (void)archiveMAMMessages:(NSArray<XMPPMessage *> *)messages chatJID:(XMPPJID *)chatJID xmppStream:(XMPPStream *)xmppStream beforeMessageOriginalIdentifier:(NSString *)messageOriginalIdentifier;
-- (void)archiveAffiliationsMessageWithText:(NSString *)text chatJID:(XMPPJID *)chatJID senderJID:(XMPPJID *)senderJID xmppStream:(XMPPStream *)xmppStream completion:(void (^)(XMPPMessage *))completion;
 
 - (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare;
 
