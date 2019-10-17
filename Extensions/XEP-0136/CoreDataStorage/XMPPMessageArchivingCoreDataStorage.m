@@ -807,24 +807,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}];
 }
 
-- (void)archiveAffiliationsMessageWithText:(NSString *)text chatJID:(XMPPJID *)chatJID senderJID:(XMPPJID *)senderJID xmppStream:(XMPPStream *)xmppStream completion:(void (^)(XMPPMessage *))completion {
-    [self scheduleBlock:^{
-        XMPPElement *user = [XMPPElement elementWithName:@"user"];
-        [user addAttributeWithName:@"affiliation" stringValue:text];
-        [user setStringValue:[senderJID bare]];
-        
-        XMPPElement *x = [[XMPPElement alloc] initWithName:@"x" xmlns:@"urn:xmpp:muclight:0#affiliations"];
-        [x addChild:user];
-        
-        XMPPMessage *message = [XMPPMessage messageWithType:@"groupchat"];
-        [message addAttributeWithName:@"from" stringValue:[chatJID bare]];
-        [message addChild:x];
-        
-        NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
-        completion(message);
-    }];
-}
-
 - (void)deleteMessagesForJabberIdentifierBare:(NSString *)jabberIdentifierBare
 {
 	[self scheduleBlock:^{
