@@ -710,7 +710,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				continue;
 			}
 			
-			NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+			if ([message isGroupChatMessageWithAffiliations]) {
+				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+			} else {
+				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+			}
 		}
 	}];
 }
@@ -749,7 +753,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		if ([message isGroupChatMessageWithAffiliations]) {
+			NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		} else {
+			NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		}
 	}];
 }
 
