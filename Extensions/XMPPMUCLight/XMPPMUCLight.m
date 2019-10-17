@@ -12,6 +12,7 @@
 #import "XMPPIDTracker.h"
 #import "XMPPMUCLight.h"
 #import "XMPPRoomLight.h"
+#import "XMPPMessage+XEP0045.h"
 
 NSString *const XMPPMUCLightDiscoItemsNamespace = @"http://jabber.org/protocol/disco#items";
 NSString *const XMPPRoomLightAffiliations = @"urn:xmpp:muclight:0#affiliations";
@@ -227,25 +228,13 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message {
-
-	//  <message from='coven@muclight.shakespeare.lit'
-	//           to='user2@shakespeare.lit'
-	//           type='groupchat'
-	//           id='createnotif'>
-	//      <x xmlns='urn:xmpp:muclight:0#affiliations'>
-	//          <version>aaaaaaa</version>
-	//          <user affiliation='member'>user2@shakespeare.lit</user>
-	//      </x>
-	//      <body />
-	//  </message>
-
-	XMPPJID *from = message.from;
-	NSXMLElement *x = [message elementForName:@"x" xmlns:XMPPRoomLightAffiliations];
-    for (NSXMLElement *user in [x elementsForName:@"user"]) {
-        NSString *affiliation = [user attributeForName:@"affiliation"].stringValue;
-        XMPPJID *userJID = [XMPPJID jidWithString:user.stringValue];
-        [multicastDelegate xmppMUCLight:self changedAffiliation:affiliation userJID:userJID roomJID:from];
-    }
+	if ([message isGroupChatMessageWithAffiliations]) {
+		XMPPJID *roomJID = [message from];
+		XMPPJID *userJID = [XMPPJID jidWithString:[message groupChatMessageAffiliationsUser]];
+		if (roomJID && userJID) {
+			[multicastDelegate xmppMUCLight:self changedAffiliationWithMessage:message userJID:userJID roomJID:roomJID];
+		}
+	}
 }
 
 - (void)xmppStream:(XMPPStream *)sender didRegisterModule:(id)module {
