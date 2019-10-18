@@ -36,7 +36,7 @@ Pod::Spec.new do |s|
 	  }
     ss.resources = [ 'Extensions/**/*.{xcdatamodel,xcdatamodeld}']
 	  ss.dependency 'CocoaLumberjack' # Skip pinning version because of the awkward 2.x->3.x transition
-	  ss.dependency 'CocoaAsyncSocket', git: 'https://github.com/robbiehanson/CocoaAsyncSocket.git', branch: 'master'
+	  ss.dependency 'CocoaAsyncSocket'
 	  ss.dependency 'KissXML'
 	  ss.dependency 'libidn'
   end
