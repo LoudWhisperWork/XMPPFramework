@@ -169,10 +169,11 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
     return result;
 }
 
-- (NSInteger)totalUnreadMessagesCount {
+- (NSInteger)totalUnreadMessagesCountForChatsJabberIdentifiersBare:(NSArray<NSString *> *)chatsJabberIdentifiersBare {
     __block NSInteger result = 0;
     dispatch_block_t block = ^{ @autoreleasepool {
-        for (NSNumber *value in self.unreadMessagesCount.allValues) {
+        for (NSString *chatJabberIdentifierBare in chatsJabberIdentifiersBare) {
+            NSNumber *value = self.unreadMessagesCount[chatJabberIdentifierBare];
             result += [value integerValue];
         }
     }};

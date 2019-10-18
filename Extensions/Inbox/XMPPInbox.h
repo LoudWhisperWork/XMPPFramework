@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)discoverInboxMessages;
 - (NSInteger)unreadMessagesCountForChatJID:(XMPPJID *)chatJID;
-- (NSInteger)totalUnreadMessagesCount;
+- (NSInteger)totalUnreadMessagesCountForChatsJabberIdentifiersBare:(NSArray<NSString *> *)chatsJabberIdentifiersBare;
 - (nullable NSString *)unreadMessageIdentifierFromWhichCountingStartsForChatJID:(XMPPJID *)chatJID;
 
 @end
