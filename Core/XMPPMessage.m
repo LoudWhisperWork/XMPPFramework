@@ -11,7 +11,7 @@
 
 @implementation XMPPMessageModel
 
-- (instancetype)initWithIdentifier:(nonnull NSString *)identifier originalIdentifier:(nullable NSString *)originalIdentifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system {
+- (instancetype)initWithIdentifier:(nonnull NSString *)identifier originalIdentifier:(nullable NSString *)originalIdentifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system sended:(BOOL)sended {
     self = [super init];
     if (self) {
         _identifier = identifier;
@@ -24,6 +24,7 @@
         _previousArchiveIdentifier = previousArchiveIdentifier;
         _isOutgoing = outgoing;
         _isSystem = system;
+        _isSended = sended;
     }
     return self;
 }

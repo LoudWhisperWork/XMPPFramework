@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XMPPMessageModel : NSObject
 
-- (instancetype)initWithIdentifier:(nonnull NSString *)identifier originalIdentifier:(nullable NSString *)originalIdentifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system;
+- (instancetype)initWithIdentifier:(nonnull NSString *)identifier originalIdentifier:(nullable NSString *)originalIdentifier sender:(nonnull NSString *)sender recipient:(nonnull NSString *)recipient text:(nonnull NSString *)text date:(nonnull NSDate *)date archiveIdentifier:(nullable NSString *)archiveIdentifier previousArchiveIdentifier:(nullable NSString *)previousArchiveIdentifier outgoing:(BOOL)outgoing system:(BOOL)system sended:(BOOL)sended;
 
 @property (nonatomic, readonly, nonnull) NSString *identifier;
 @property (nonatomic, readonly, nullable) NSString *originalIdentifier;
@@ -28,6 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) NSString *previousArchiveIdentifier;
 @property (nonatomic, readonly) BOOL isOutgoing;
 @property (nonatomic, readonly) BOOL isSystem;
+@property (nonatomic, readonly) BOOL isSended;
 
 @end
 

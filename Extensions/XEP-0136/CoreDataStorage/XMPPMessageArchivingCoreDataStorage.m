@@ -431,7 +431,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             if (results && [results count] > 0) {
                 for (XMPPMessageArchiving_Message_CoreDataObject *result in results) {
                     if ([result identifier] && [result body] && [result streamBareJidStr] && [result bareJidStr]) {
-						XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier originalIdentifier:result.originalIdentifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:result.isOutgoing system:result.isSystem];
+						XMPPMessageModel *message = [[XMPPMessageModel alloc] initWithIdentifier:result.identifier originalIdentifier:result.originalIdentifier sender:result.streamBareJidStr recipient:result.bareJidStr text:result.body date:result.timestamp archiveIdentifier:result.archiveIdentifier previousArchiveIdentifier:result.previousArchiveIdentifier outgoing:result.isOutgoing system:result.isSystem sended:result.isSended];
                         [messages addObject:message];
                     }
                 }
