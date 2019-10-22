@@ -21,6 +21,7 @@
 @dynamic order;
 @dynamic body;
 @dynamic thread;
+@dynamic sended;
 @dynamic outgoing;
 @dynamic system;
 @dynamic composing;
@@ -136,6 +137,16 @@
 }
 
 #pragma mark Convenience properties
+
+- (BOOL)isSended
+{
+    return [self.sended boolValue];
+}
+
+- (void)setIsSended:(BOOL)flag
+{
+    self.sended = @(flag);
+}
 
 - (BOOL)isOutgoing
 {

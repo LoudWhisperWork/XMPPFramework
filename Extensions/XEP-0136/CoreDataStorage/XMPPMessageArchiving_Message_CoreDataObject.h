@@ -27,6 +27,9 @@
 @property (nonatomic, strong) NSString * body;
 @property (nonatomic, strong) NSString * thread;
 
+@property (nonatomic, strong) NSNumber * sended;    // Use isSended
+@property (nonatomic, assign) BOOL isSended;        // Convenience property
+
 @property (nonatomic, strong) NSNumber * outgoing;    // Use isOutgoing
 @property (nonatomic, assign) BOOL isOutgoing;        // Convenience property
 
