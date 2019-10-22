@@ -65,19 +65,6 @@ static NSString *const QueryIdAttributeName = @"queryid";
 - (void)retrieveMessageArchiveAt:(XMPPJID *)archiveJID withFields:(NSArray *)fields withResultSet:(XMPPResultSet *)resultSet {
     NSXMLElement *formElement = [NSXMLElement elementWithName:@"x" xmlns:@"jabber:x:data"];
     [formElement addAttributeWithName:@"type" stringValue:@"submit"];
-    [formElement addChild:[XMPPMessageArchiveManagement fieldWithVar:@"FORM_TYPE" type:@"hidden" andValue:XMLNS_XMPP_MAM]];
-    
-    for (NSXMLElement *field in fields) {
-        [formElement addChild:field];
-    }
-
-    NSString *newQueryId = [XMPPStream generateUUID];
-    [self retrieveMessageArchiveAt:archiveJID withFormElement:formElement resultSet:resultSet queryId:newQueryId];
-}
-
-- (void)retrievePersonalMessageArchiveAt:(XMPPJID *)archiveJID withFields:(NSArray<NSXMLElement*> *)fields withResultSet:(XMPPResultSet *)resultSet {
-	NSXMLElement *formElement = [NSXMLElement elementWithName:@"x" xmlns:@"jabber:x:data"];
-    [formElement addAttributeWithName:@"type" stringValue:@"submit"];
     [formElement addChild:[XMPPMessageArchiveManagement fieldWithVar:@"FORM_TYPE" type:nil andValue:XMLNS_XMPP_MAM]];
     
     for (NSXMLElement *field in fields) {
@@ -86,27 +73,12 @@ static NSString *const QueryIdAttributeName = @"queryid";
 
     NSString *newQueryId = [XMPPStream generateUUID];
     [self retrieveMessageArchiveAt:archiveJID withFormElement:formElement resultSet:resultSet queryId:newQueryId];
-}
-
-- (void)retrieveGroupMessageArchiveAt:(nonnull XMPPJID *)archiveJID withFields:(nullable NSArray<NSXMLElement*> *)fields withResultSet:(nullable XMPPResultSet *)resultSet {
-	NSXMLElement *formElement = [NSXMLElement elementWithName:@"x" xmlns:@"jabber:x:data"];
-    [formElement addAttributeWithName:@"type" stringValue:@"submit"];
-    [formElement addChild:[XMPPMessageArchiveManagement fieldWithVar:@"FORM_TYPE" type:nil andValue:XMLNS_XMPP_MAM]];
-	if (archiveJID) {
-        [formElement addChild:[XMPPMessageArchiveManagement fieldWithVar:@"with" type:nil andValue:[archiveJID full]]];
-    }
-    
-    for (NSXMLElement *field in fields) {
-        [formElement addChild:field];
-    }
-
-    NSString *newQueryId = [XMPPStream generateUUID];
-    [self retrieveMessageArchiveAt:nil withFormElement:formElement resultSet:resultSet queryId:newQueryId];
 }
 
 - (void)retrieveMessageArchiveAt:(XMPPJID *)archiveJID withFormElement:(NSXMLElement *)formElement resultSet:(XMPPResultSet *)resultSet queryId:(NSString *)queryId {
 	[self performBlockAsync:^{
 		XMPPIQ *iq = [XMPPIQ iqWithType:@"set"];
+		[iq addAttributeWithName:@"xmlns" stringValue:@"jabber:client"];
 		[iq addAttributeWithName:@"id" stringValue:[XMPPStream generateUUID]];
 		
 		if (archiveJID) {
