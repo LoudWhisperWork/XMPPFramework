@@ -31,9 +31,9 @@ extern NSString *const XMLNS_XMPP_MAM;
 - (void)retrieveMessageArchiveWithFields:(nullable NSArray<NSXMLElement*> *)fields
                            withResultSet:(nullable XMPPResultSet *)resultSet;
 
-- (void)retrieveMessageArchiveAt:(XMPPJID *)archiveJID
-                      withFields:(NSArray *)fields
-                   withResultSet:(XMPPResultSet *)resultSet;
+- (void)retrieveMessageArchiveAt:(nullable XMPPJID *)archiveJID
+                      withFields:(nonnull NSArray *)fields
+                   withResultSet:(nullable XMPPResultSet *)resultSet;
 
 - (void)retrieveFormFields;
 
