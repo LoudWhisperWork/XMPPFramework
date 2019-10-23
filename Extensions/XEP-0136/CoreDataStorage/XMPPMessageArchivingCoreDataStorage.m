@@ -310,7 +310,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		archivedMessage.originalIdentifier = (originalIdentifier != nil ? originalIdentifier : archivedMessage.originalIdentifier);
 		archivedMessage.body = body;
 		archivedMessage.message = message;
-		archivedMessage.isSended = isSended;
+		archivedMessage.isSended = (archivedMessage.isSended ? archivedMessage.isSended : isSended);
 		archivedMessage.isComposing = isComposing;
 		
 		updatedPreviousArchiveIdentifier = archivedMessage.archiveIdentifier;
