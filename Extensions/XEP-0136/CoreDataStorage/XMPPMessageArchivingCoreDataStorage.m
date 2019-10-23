@@ -243,14 +243,14 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
     return NO;
 }
 
-- (NSString *)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body isSended:(BOOL)isSended shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier messageIndex:(NSUInteger)messageIndex {
+- (NSString *)saveMessageToCoreData:(XMPPMessage *)message body:(NSString *)body isSended:(BOOL)isSended date:(NSDate *)date shouldDeleteComposingMessage:(BOOL)shouldDeleteComposingMessage isComposing:(BOOL)isComposing xmppStream:(XMPPStream *)xmppStream archiveIdentifier:(NSString *)archiveIdentifier previousArchiveIdentifier:(NSString *)previousArchiveIdentifier messageIndex:(NSUInteger)messageIndex {
 	NSManagedObjectContext *moc = [self managedObjectContext];
     NSDictionary *parsedMessageParameters = [self parsedMessageParametersFromMessage:message xmppStream:xmppStream];
 
 	NSString *updatedPreviousArchiveIdentifier = previousArchiveIdentifier;
 	NSString *identifier = [parsedMessageParameters objectForKey:XMPP_MESSAGE_IDENTIFIER_KEY];
 	NSString *originalIdentifier = [parsedMessageParameters objectForKey:XMPP_MESSAGE_ORIGINAL_IDENTIFIER_KEY];
-    NSDate *date = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
+    NSDate *parsedDate = [parsedMessageParameters objectForKey:XMPP_MESSAGE_DATE_KEY];
     BOOL isOutgoing = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_OUTGOING_KEY] boolValue];
     BOOL isSystem = [[parsedMessageParameters objectForKey:XMPP_MESSAGE_IS_SYSTEM_KEY] boolValue];
     NSString *sender = [parsedMessageParameters objectForKey:XMPP_MESSAGE_SENDER_KEY];
@@ -289,12 +289,14 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
             archivedMessage.isSystem = isSystem;
 			didCreateNewArchivedMessage = YES;
         }
-        
-        NSDate *newArchiveDate = (date != nil ? date : (archivedMessage.timestamp != nil ? archivedMessage.timestamp : [NSDate new]));
-        BOOL didChangeDateOfArchivedMessage = (newArchiveDate != archivedMessage.timestamp);
-        if (didChangeDateOfArchivedMessage) {
-            archivedMessage.timestamp = newArchiveDate;
-        }
+		
+		if (parsedDate) {
+			archivedMessage.timestamp = parsedDate;
+		} else if (date) {
+			archivedMessage.timestamp = date;
+		} else {
+			archivedMessage.timestamp = (archivedMessage.timestamp != nil ? archivedMessage.timestamp : [NSDate new]);
+		}
 		
 		if (!archivedMessage.archiveIdentifier) {
 			archivedMessage.archiveIdentifier = archiveIdentifier;
@@ -726,7 +728,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
 	}];
 }
 
@@ -739,19 +741,19 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			}
 			
 			if ([message isGroupChatMessageWithAffiliations]) {
-				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.groupChatMessageAffiliationsType isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
 			} else {
-				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+				NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
 			}
 		}
 	}];
 }
 
 - (void)archiveMessage:(XMPPMessage *)message xmppStream:(XMPPStream *)xmppStream {
-	[self archiveMessage:message sended:YES xmppStream:xmppStream];
+	[self archiveMessage:message sended:YES date:nil xmppStream:xmppStream];
 }
 
-- (void)archiveMessage:(XMPPMessage *)message sended:(BOOL)sended xmppStream:(XMPPStream *)xmppStream
+- (void)archiveMessage:(XMPPMessage *)message sended:(BOOL)sended date:(NSDate *)date xmppStream:(XMPPStream *)xmppStream
 {
 	if ([message isErrorMessage] || [message isGroupChatMessageWithAffiliations]) {
 		return;
@@ -785,7 +787,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	}
 	
 	[self scheduleBlock:^{
-		NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body isSended:sended shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
+		NSString *previousArchiveIdentifier = [self saveMessageToCoreData:message body:message.body isSended:sended date:date shouldDeleteComposingMessage:shouldDeleteComposingMessage isComposing:isComposing xmppStream:xmppStream archiveIdentifier:nil previousArchiveIdentifier:nil messageIndex:0];
 	}];
 }
 
@@ -819,14 +821,14 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
                     NSDictionary *archivesIdentifiers;
                     if ([newMessage isGroupChatMessage]) {
                         if ([newMessage isGroupChatMessageWithBody]) {
-							previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.body isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
+							previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.body isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
 							messageIndex += 1;
                         } else if ([newMessage isGroupChatMessageWithAffiliations]) {
-							previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.groupChatMessageAffiliationsType isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
+							previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.groupChatMessageAffiliationsType isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
 							messageIndex += 1;
                         }
                     } else if ([newMessage isChatMessageWithBody]) {
-						previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.body isSended:YES shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
+						previousArchiveIdentifier = [self saveMessageToCoreData:newMessage body:newMessage.body isSended:YES date:nil shouldDeleteComposingMessage:NO isComposing:NO xmppStream:xmppStream archiveIdentifier:archiveIdentifier previousArchiveIdentifier:previousArchiveIdentifier messageIndex:messageIndex];
 						messageIndex += 1;
                     }
 				}
