@@ -507,6 +507,24 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 					managedObjectContext:moc] firstObject];
 }
 
+- (XMPPMessageModel *)messageModelFor:(NSString *)messageIdentifier chatJID:(XMPPJID *)chatJID {
+	__block XMPPMessageModel *messageModel;
+	dispatch_block_t block = ^{ @autoreleasepool {
+        NSManagedObjectContext *moc = [self managedObjectContext];
+		XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageInConversation:chatJID.bare messageIdentifier:messageIdentifier managedObjectContext:moc];
+		if ([archivedMessage identifier] && [archivedMessage body] && [archivedMessage streamBareJidStr] && [archivedMessage bareJidStr]) {
+			messageModel = [[XMPPMessageModel alloc] initWithIdentifier:archivedMessage.identifier originalIdentifier:archivedMessage.originalIdentifier sender:archivedMessage.streamBareJidStr recipient:archivedMessage.bareJidStr text:archivedMessage.body date:archivedMessage.timestamp archiveIdentifier:archivedMessage.archiveIdentifier previousArchiveIdentifier:archivedMessage.previousArchiveIdentifier outgoing:archivedMessage.isOutgoing system:archivedMessage.isSystem sended:archivedMessage.isSended];
+		}
+	}};
+	
+	if (dispatch_get_specific(storageQueueTag))
+		block();
+	else
+		dispatch_sync(storageQueue, block);
+	
+	return messageModel;
+}
+
 - (BOOL)isMessageSended:(NSString *)messageIdentifier chatJID:(XMPPJID *)chatJID {
 	__block BOOL isMessageSended = NO;
 	dispatch_block_t block = ^{ @autoreleasepool {
