@@ -290,12 +290,17 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			didCreateNewArchivedMessage = YES;
         }
 		
+		BOOL didChangeDateOfArchivedMessage = NO;
 		if (parsedDate) {
+			didChangeDateOfArchivedMessage = (archivedMessage.timestamp != parsedDate);
 			archivedMessage.timestamp = parsedDate;
 		} else if (date) {
+			didChangeDateOfArchivedMessage = (archivedMessage.timestamp != date);
 			archivedMessage.timestamp = date;
 		} else {
-			archivedMessage.timestamp = (archivedMessage.timestamp != nil ? archivedMessage.timestamp : [NSDate new]);
+			NSDate *newDate = (archivedMessage.timestamp != nil ? archivedMessage.timestamp : [NSDate new]);
+			didChangeDateOfArchivedMessage = (archivedMessage.timestamp != newDate);
+			archivedMessage.timestamp = newDate;
 		}
 		
 		if (!archivedMessage.archiveIdentifier) {
