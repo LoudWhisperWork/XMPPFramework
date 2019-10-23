@@ -66,6 +66,7 @@ extern NSString *const XMPP_MESSAGE_IS_SYSTEM_KEY;
                                                       streamBareJidStr:(NSString *)streamBareJidStr
                                                   managedObjectContext:(NSManagedObjectContext *)moc;
 
+- (BOOL)isMessageSended:(NSString *)messageIdentifier chatJID:(XMPPJID *)chatJID;
 - (BOOL)isMessageExists:(XMPPMessage *)message chatJID:(XMPPJID *)chatJID;
 
 - (void)clear;

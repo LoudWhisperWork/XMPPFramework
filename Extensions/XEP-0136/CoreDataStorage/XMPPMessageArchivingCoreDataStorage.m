@@ -500,6 +500,22 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 					managedObjectContext:moc] firstObject];
 }
 
+- (BOOL)isMessageSended:(NSString *)messageIdentifier chatJID:(XMPPJID *)chatJID {
+	__block BOOL isMessageSended = NO;
+	dispatch_block_t block = ^{ @autoreleasepool {
+        NSManagedObjectContext *moc = [self managedObjectContext];
+		XMPPMessageArchiving_Message_CoreDataObject *archivedMessage = [self archivedMessageInConversation:chatJID.bare messageIdentifier:messageIdentifier managedObjectContext:moc];
+		isMessageSended = (archivedMessage != nil && archivedMessage.isSended);
+	}};
+	
+	if (dispatch_get_specific(storageQueueTag))
+		block();
+	else
+		dispatch_sync(storageQueue, block);
+	
+	return isMessageSended;
+}
+
 - (BOOL)isMessageExists:(XMPPMessage *)message chatJID:(XMPPJID *)chatJID {
 	__block BOOL isMessageExists = NO;
 	dispatch_block_t block = ^{ @autoreleasepool {
