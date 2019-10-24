@@ -259,7 +259,7 @@ const NSTimeInterval XMPPIDTrackerTimeoutNone = -1;
         for (id <XMPPTrackingInfo> info in [dict allValues]) {
             if (info)
             {
-                [info invokeWithObject:obj];
+                [info invokeWithObject:nil];
                 [info cancelTimer];
             }
         }
