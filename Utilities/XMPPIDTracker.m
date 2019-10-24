@@ -254,6 +254,25 @@ const NSTimeInterval XMPPIDTrackerTimeoutNone = -1;
     return result;
 }
 
+- (void)invokeAllIDs {
+    void (^block)(void) = ^void(void) {
+        for (id <XMPPTrackingInfo> info in [dict allValues]) {
+            if (info)
+            {
+                [info invokeWithObject:obj];
+                [info cancelTimer];
+            }
+        }
+        [dict removeAllObjects];
+    };
+    
+    if (dispatch_get_specific(queueTag)) {
+        block();
+    } else {
+        dispatch_sync(queue, block);
+    }
+}
+
 - (NSUInteger)numberOfIDs
 {
     __block NSUInteger result = 0;

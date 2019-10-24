@@ -146,6 +146,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)invokeForElement:(XMPPElement *)element withObject:(nullable id)obj;
 
+- (void)invokeAllIDs;
+
 @property (nonatomic, readonly) NSUInteger numberOfIDs;
 
 - (void)removeID:(NSString *)elementID;
