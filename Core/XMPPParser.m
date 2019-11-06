@@ -812,10 +812,11 @@ static void xmpp_xmlEndElement(void *ctx, const xmlChar *localname,
 {
     dispatch_block_t block = ^{ @autoreleasepool {
 		
-        NSString *dataString = [[NSString alloc] initWithData:dataToParse encoding:NSUTF8StringEncoding];
+        NSError *parseError;
+        NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:dataToParse options:0 error:&parseError];
         
         int result;
-        if (![dataString hasSuffix:@">"]) {
+        if (parseError || !document) {
             NSString *hexadecimalStringFromData = [self hexadecimalStringFromData:dataToParse];
             NSData *clearData = [self utf8DataFromHexadecimalString:hexadecimalStringFromData];
             result = xmlParseChunk(self->parserCtxt, (const char *)[clearData bytes], (int)[clearData length], 0);
