@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Asynchronously parses the given data.
  * The delegate methods will be dispatch_async'd as events occur.
 **/
-- (void)parseData:(NSData *)dataToParse;
+- (void)parseData:(NSData *)dataToParse usingHexadecimalData:(BOOL)usingHexadecimalData;
 
 @end
 

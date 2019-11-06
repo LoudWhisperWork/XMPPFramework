@@ -808,15 +808,12 @@ static void xmpp_xmlEndElement(void *ctx, const xmlChar *localname,
         dispatch_async(parserQueue, block);
 }
 
-- (void)parseData:(NSData *)dataToParse
+- (void)parseData:(NSData *)dataToParse usingHexadecimalData:(BOOL)usingHexadecimalData
 {
     dispatch_block_t block = ^{ @autoreleasepool {
 		
-        NSError *parseError;
-        NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:dataToParse options:0 error:&parseError];
-        
         int result;
-        if (parseError || !document) {
+        if (usingHexadecimalData) {
             NSString *hexadecimalStringFromData = [self hexadecimalStringFromData:dataToParse];
             NSData *clearData = [self utf8DataFromHexadecimalString:hexadecimalStringFromData];
             result = xmlParseChunk(self->parserCtxt, (const char *)[clearData bytes], (int)[clearData length], 0);
