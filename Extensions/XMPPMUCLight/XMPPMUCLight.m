@@ -21,6 +21,7 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 
 @interface XMPPMUCLight() {
 	NSMutableSet *rooms;
+    NSMutableDictionary *itemsForElementIdentifier;
 }
 @end
 
@@ -33,6 +34,7 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 - (instancetype)initWithDispatchQueue:(dispatch_queue_t)queue {
 	if ((self = [super initWithDispatchQueue:queue])) {
 		rooms = [[NSMutableSet alloc] init];
+        itemsForElementIdentifier = [[NSMutableDictionary alloc] init];
 	}
 	return self;
 }
@@ -43,7 +45,6 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 		xmppIDTracker = [[XMPPIDTracker alloc] initWithDispatchQueue:moduleQueue];
 		return YES;
 	}
-	
 	return NO;
 }
 
@@ -51,6 +52,7 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 	dispatch_block_t block = ^{ @autoreleasepool {
 		[self->xmppIDTracker removeAllIDs];
 		self->xmppIDTracker = nil;
+        [self->itemsForElementIdentifier removeAllObjects];
 	}};
 	
 	if (dispatch_get_specific(moduleQueueTag))
@@ -61,7 +63,7 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 	[super deactivate];
 }
 
-- (nonnull NSSet *)rooms{
+- (nonnull NSSet *)rooms {
 	@synchronized(rooms) {
 		return [rooms copy];
 	}
@@ -73,20 +75,11 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 		return NO;
 	
 	dispatch_block_t block = ^{ @autoreleasepool {
-
-		NSXMLElement *query = [NSXMLElement elementWithName:@"query"
-													  xmlns:XMPPMUCLightDiscoItemsNamespace];
-		XMPPIQ *iq = [XMPPIQ iqWithType:@"get"
-									 to:[XMPPJID jidWithString:serviceName]
-							  elementID:[self->xmppStream generateUUID]
-								  child:query];
-		
-		[self->xmppIDTracker addElement:iq
-						   target:self
-						 selector:@selector(handleDiscoverRoomsQueryIQ:withInfo:)
-						  timeout:60];
-		
-		[self->xmppStream sendElement:iq];
+        NSMutableArray *items = [NSMutableArray new];
+        NSString *elementId = [XMPPStream generateUUID];
+        [self->itemsForElementIdentifier setObject:items forKey:elementId];
+        
+        [self discoverRoomsForServiceNamed:serviceName elementId:elementId resultSet:nil];
 	}};
 	
 	if (dispatch_get_specific(moduleQueueTag))
@@ -97,30 +90,59 @@ NSString *const XMPPMUCLightBlocking = @"urn:xmpp:muclight:0#blocking";
 	return YES;
 }
 
+- (void)discoverRoomsForServiceNamed:(NSString *)serviceName elementId:(NSString *)elementId resultSet:(XMPPResultSet *)resultSet {
+    NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:XMPPMUCLightDiscoItemsNamespace];
+    if (resultSet) {
+        [query addChild:resultSet];
+    }
+    
+    XMPPIQ *iq = [XMPPIQ iqWithType:@"get"
+                                 to:[XMPPJID jidWithString:serviceName]
+                          elementID:elementId
+                              child:query];
+    
+    [self->xmppIDTracker addElement:iq
+                       target:self
+                     selector:@selector(handleDiscoverRoomsQueryIQ:withInfo:)
+                      timeout:60];
+    
+    [self->xmppStream sendElement:iq];
+}
+
 - (void)handleDiscoverRoomsQueryIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)info {
 	dispatch_block_t block = ^{ @autoreleasepool {
 		NSXMLElement *errorElem = [iq elementForName:@"error"];
 		NSString *serviceName = [iq attributeStringValueForName:@"from" withDefaultValue:@""];
+        NSXMLElement *query = [iq elementForName:@"query" xmlns:XMPPMUCLightDiscoItemsNamespace];
+        NSString *elementId = [iq elementID];
+        NSMutableArray *items = [self->itemsForElementIdentifier objectForKey:elementId];
+        [self->itemsForElementIdentifier removeObjectForKey:elementId];
 		
-		if (errorElem) {
+		if (errorElem || !items) {
 			NSString *errMsg = [errorElem.children componentsJoinedByString:@", "];
 			NSInteger errorCode = [errorElem attributeIntegerValueForName:@"code" withDefaultValue:0];
 			NSDictionary *dict = @{NSLocalizedDescriptionKey : errMsg};
-			NSError *error = [NSError errorWithDomain:XMPPMUCLightErrorDomain
-												 code:errorCode
-											 userInfo:dict];
-			
+			NSError *error = [NSError errorWithDomain:XMPPMUCLightErrorDomain code:errorCode userInfo:dict];
 			[self->multicastDelegate xmppMUCLight:self failedToDiscoverRoomsForServiceNamed:serviceName withError:error];
 			return;
 		}
-		
-		NSXMLElement *query = [iq elementForName:@"query"
-										   xmlns:XMPPMUCLightDiscoItemsNamespace];
-		
-		NSArray *items = [query elementsForName:@"item"];
+        
+        NSArray *queryItems = [query elementsForName:@"item"];
+        [items addObjectsFromArray:queryItems];
 
-		[self->multicastDelegate xmppMUCLight:self didDiscoverRooms:items forServiceNamed:serviceName];
-		
+        NSXMLElement *resultSet = [query elementForName:@"set"];
+        if (resultSet && [queryItems count] > 0) {
+            NSInteger count = [[[resultSet elementForName:@"count"] stringValue] integerValue];
+            NSString *lastValue = [[resultSet elementForName:@"last"] stringValue];
+            if (lastValue && count > 0 && count > [items count]) {
+                NSString *newElementId = [XMPPStream generateUUID];
+                [self->itemsForElementIdentifier setObject:items forKey:newElementId];
+                XMPPResultSet *newResultSet = [[XMPPResultSet alloc] initWithMax:50 after:lastValue];
+                [self discoverRoomsForServiceNamed:serviceName elementId:newElementId resultSet:newResultSet];
+                return;
+            }
+        }
+        [self->multicastDelegate xmppMUCLight:self didDiscoverRooms:items forServiceNamed:serviceName];
 	}};
 	
 	if (dispatch_get_specific(moduleQueueTag))

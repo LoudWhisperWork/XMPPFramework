@@ -224,7 +224,13 @@ NSString *const XMPPInboxErrorDomain = @"XMPPInboxErrorDomain";
                             [unreadMessageIdentifier removeObjectForKey:conversationBare];
                         }
                     }
-                    [messages addObject:forwardedMessage];
+                    
+                    XMPPMessage *newMessage = [XMPPMessage messageFromElement:forwardedMessage];
+                    NSXMLElement *delayElement = [[result elementForName:@"forwarded"] elementForName: @"delay"];
+                    if (delayElement) {
+                        [newMessage addChild:[delayElement copy]];
+                    }
+                    [messages addObject:newMessage];
                 }
             }
         }
