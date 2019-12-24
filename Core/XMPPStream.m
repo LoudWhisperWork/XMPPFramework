@@ -4317,14 +4317,8 @@ enum XMPPStreamConfig
 	
 	XMPPLogRecvPre(@"RECV: %@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
 	
-    NSString *string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    BOOL usingHexadecimalData = NO;
-    if ([string containsString:@"xmlns='jabber:iq:roster'"]) {
-        usingHexadecimalData = YES;
-    }
-	
 	// Asynchronously parse the xml data
-	[parser parseData:data usingHexadecimalData:usingHexadecimalData];
+	[parser parseData:data];
 	
 	if ([self isSecure])
 	{

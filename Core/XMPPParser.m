@@ -808,18 +808,12 @@ static void xmpp_xmlEndElement(void *ctx, const xmlChar *localname,
         dispatch_async(parserQueue, block);
 }
 
-- (void)parseData:(NSData *)dataToParse usingHexadecimalData:(BOOL)usingHexadecimalData
+- (void)parseData:(NSData *)dataToParse
 {
     dispatch_block_t block = ^{ @autoreleasepool {
 		
-        int result;
-        if (usingHexadecimalData) {
-            NSString *hexadecimalStringFromData = [self hexadecimalStringFromData:dataToParse];
-            NSData *clearData = [self utf8DataFromHexadecimalString:hexadecimalStringFromData];
-            result = xmlParseChunk(self->parserCtxt, (const char *)[clearData bytes], (int)[clearData length], 0);
-        } else {
-            result = xmlParseChunk(self->parserCtxt, (const char *)[dataToParse bytes], (int)[dataToParse length], 0);
-        }
+        NSData *clearData = [self dataReplacingOccurrencesOfName:dataToParse];
+        int result = xmlParseChunk(self->parserCtxt, (const char *)[clearData bytes], (int)[clearData length], 0);
         
         if (result == 0)
         {
@@ -869,35 +863,15 @@ static void xmpp_xmlEndElement(void *ctx, const xmlChar *localname,
         dispatch_async(parserQueue, block);
 }
 
-- (NSString *)hexadecimalStringFromData:(NSData *)data
+- (NSData *)dataReplacingOccurrencesOfName:(NSData *)dataToParse
 {
-    const unsigned char *dataBuffer = (const unsigned char *)[data bytes];
-    if (!dataBuffer) {
-        return [NSString string];
-    }
-
-    NSUInteger dataLength = [data length];
-    NSMutableString *hexString = [NSMutableString stringWithCapacity:(dataLength * 2)];
-
-    for (int i = 0; i < dataLength; ++i) {
-        [hexString appendString:[NSString stringWithFormat:@"%02lx", (unsigned long)dataBuffer[i]]];
-    }
-    return [NSString stringWithString:hexString];
-}
-
-- (NSData *)utf8DataFromHexadecimalString:(NSString *)str
-{
-    NSMutableString *newString = [[NSMutableString alloc] init];
-    int i = 0;
-    while (i < [str length])
-    {
-        NSString *hexChar = [str substringWithRange: NSMakeRange(i, 2)];
-        int value = 0;
-        sscanf([hexChar cStringUsingEncoding:NSASCIIStringEncoding], "%x", &value);
-        [newString appendFormat:@"%c", (char)value];
-        i+=2;
-    }
-    return [newString dataUsingEncoding:NSUTF8StringEncoding];
+	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"name='(.*?)'" options:NSRegularExpressionCaseInsensitive error:nil];
+    
+    NSString *stringToParse = [[NSString alloc] initWithData:dataToParse encoding:NSUTF8StringEncoding];
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:stringToParse options:0 range:NSMakeRange(0, [stringToParse length]) withTemplate:@"name='name'"];
+    
+    NSData *modifiedData = [modifiedString dataUsingEncoding:NSUTF8StringEncoding];
+    return modifiedData;
 }
 
 @end
